@@ -15,6 +15,7 @@
       font-weight: 400;
       font-style: normal;
       color: white;
+      font-size: xx-large;
     }
 
     .silkscreen-bold {
@@ -34,23 +35,28 @@
     }
 
     canvas {
-      width: 600px;
-      height: 450px;
       border: 5px solid gray;
       background-color: white;
     }
 
-    div#title{
+    div#titleContainer {
+      display: flex;
+      justify-content: center;
       text-align: center;
       position: absolute;
       width: 100%;
-      border: 2px solid white;
-      border-radius: 5px;
       bottom: 100%;
       margin-bottom: 10px;
     }
 
-    div#container{
+    div#title {
+      position: relative;
+      text-align: center;
+      width: fit-content;
+      border: 2px solid white;
+    }
+
+    div#container {
       position: relative;
       width: 600px;
     }
@@ -60,15 +66,116 @@
 
 <body>
   <div id="container">
-    <div id="title" class="silkscreen-regular">
-      Breakout Game
+    <div id="titleContainer">
+      <div id="title" class="silkscreen-regular">
+        Breakout Game
+      </div>
     </div>
 
-    <canvas id="canvas"></canvas>
+    <canvas id="canvas" width="600" height="450"></canvas>
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+
+      const canvas = document.getElementById('canvas')
+      const ctx = canvas.getContext('2d')
+      const bg_p_c = ['#262626', '#363636']
+      const bg_p_size = 30
+      const PaddleW = 90
+      const PaddleH = 10
+      const PaddlePos = { x: 255, y: 385 }
+      const BallRad = 9
+      const BallPos = { x: 300, y: 370 }
+      const blockW = 50
+      const blockH = 20
+      const blockStartPos = { x: 60, y: 60 }
+
+      const keysHeld = new Set()
+
+      let blocks = []
+      let started = false
+      let areaClear = false
+      let paddleMomentum = 0
+      let ballMomentumX = 0
+      let ballMomentumY = 0
+
+      function drawBackground() {
+        for (let row = 0; row < canvas.height / bg_p_size; row++) {
+          for (let col = 0; col < canvas.width / bg_p_size; col++) {
+            ctx.fillStyle = (row + col) % 2 === 0 ? bg_p_c[0] : bg_p_c[1]
+            ctx.fillRect(col * bg_p_size, row * bg_p_size, bg_p_size, bg_p_size)
+          }
+        }
+      }
+
+      function drawPaddle() {
+        ctx.fillStyle = '#ffffff'
+        ctx.beginPath()
+        ctx.roundRect(PaddlePos.x, PaddlePos.y, PaddleW, PaddleH, 3)
+        ctx.fill()
+        return
+      }
+
+      function drawBall() {
+        ctx.fillStyle = '#ffffff'
+        ctx.beginPath()
+        ctx.arc(BallPos.x, BallPos.y, BallRad, 0, Math.PI * 2)
+        ctx.fill()
+      }
+
+      function generateBlocks() {
+        if (!started || areaClear) {
+
+        }
+      }
+
+      /*
+      if (!started && e.key === "w" || e.key === "ArrowUp") {
+          started = true
+          ballMomentumX = paddleMomentum
+          ballMomentumY = 5
+        }
+      */
+
+
+      document.addEventListener("keydown", (e) => {
+        keysHeld.add(e.key)
+      })
+
+      document.addEventListener("keyup", (e) => {
+        keysHeld.delete(e.key)
+      })
+
+      document.addEventListener("keydown", (e) => {
+        if (!started && (e.key === "ArrowUp" || e.key === "w")) {
+          started = true
+          ballMomentumX = paddleMomentum !== 0 ? paddleMomentum : 2
+          ballMomentumY = -5
+        }
+      })
+
+      let gameTick = setInterval(() => {
+
+        if (keysHeld.has("ArrowLeft") || keysHeld.has("a")) {
+          paddleMomentum = -5
+        } else if (keysHeld.has("ArrowRight") || keysHeld.has("d")) {
+          paddleMomentum = 5
+        } else {
+          paddleMomentum = 0
+        }
+
+        PaddlePos.x = PaddlePos.x + paddleMomentum
+
+        if (PaddlePos.x < 1) PaddlePos.x = 1
+        if (PaddlePos.x > 509) PaddlePos.x = 509
+
+        if (!started) BallPos.x = PaddlePos.x + 45
+
+        drawBackground()
+        drawPaddle()
+        drawBall()
+      }, 10)
 
     })
   </script>
