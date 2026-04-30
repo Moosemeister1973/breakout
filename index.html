@@ -49,17 +49,23 @@
       bottom: 100%;
       margin-bottom: 10px;
     }
+
+    div#container{
+      position: relative;
+      width: 600px;
+    }
   </style>
 
 </head>
 
 <body>
+  <div id="container">
+    <div id="title" class="silkscreen-regular">
+      Breakout Game
+    </div>
 
-  <div id="title" class="silkscreen-regular">
-    Breakout Game
+    <canvas id="canvas"></canvas>
   </div>
-
-  <canvas id="canvas"></canvas>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
