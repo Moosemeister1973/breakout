@@ -95,6 +95,7 @@
 
       let blocks = []
       let started = false
+      let gameOver = false
       let areaClear = false
       let paddleMomentum = 0
       let ballMomentumX = 0
@@ -157,6 +158,11 @@
 
       let gameTick = setInterval(() => {
 
+        if (gameOver) {
+          clearInterval(gameTick)
+          return
+        }
+
         if (keysHeld.has("ArrowLeft") || keysHeld.has("a")) {
           paddleMomentum = -5
         } else if (keysHeld.has("ArrowRight") || keysHeld.has("d")) {
@@ -166,6 +172,21 @@
         }
 
         PaddlePos.x = PaddlePos.x + paddleMomentum
+
+        if (BallPos.x + BallRad > 600 || BallPos.x - BallRad < 0) {
+          ballMomentumX *= -1
+        }
+        if (BallPos.y - BallRad < 0) {
+          ballMomentumY *= -1
+        }
+        if (BallPos.y + BallRad > 450) {
+          gameOver = true
+          alert("FAILURE")
+          location.reload()
+        }
+
+        BallPos.x = BallPos.x + ballMomentumX
+        BallPos.y = BallPos.y + ballMomentumY
 
         if (PaddlePos.x < 1) PaddlePos.x = 1
         if (PaddlePos.x > 509) PaddlePos.x = 509
