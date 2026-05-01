@@ -73,7 +73,7 @@
 
 <body>
   <div id="lifeCounter" class="silkscreen-regular">
-    3 Lives Remaining 
+    3 Lives Remaining
   </div>
   <div id="container">
     <div id="titleContainer">
@@ -98,17 +98,50 @@
       const PaddlePos = { x: 255, y: 385 }
       const BallRad = 9
       const BallPos = { x: 300, y: 370 }
-      const blockW = 50
-      const blockH = 20
-      const blockStartPos = { x: 60, y: 60 }
 
       const keysHeld = new Set()
 
-      let blocks = []
+      const blocks = [
+        // Row 1 - Red
+        { x: 75, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
+        { x: 140, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
+        { x: 205, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
+        { x: 270, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
+        { x: 335, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
+        { x: 400, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
+        { x: 465, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
+        // Row 2 - Yellow
+        { x: 75, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
+        { x: 140, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
+        { x: 205, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
+        { x: 270, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
+        { x: 335, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
+        { x: 400, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
+        { x: 465, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
+        // Row 3 - Green
+        { x: 75, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
+        { x: 140, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
+        { x: 205, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
+        { x: 270, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
+        { x: 335, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
+        { x: 400, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
+        { x: 465, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
+        // Row 4 - Cyan
+        { x: 75, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
+        { x: 140, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
+        { x: 205, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
+        { x: 270, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
+        { x: 335, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
+        { x: 400, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
+        { x: 465, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' }
+      ]
+
+      blocks.forEach((e) => {
+        e.hits = Math.random() < 0.8 ? 1 : 2
+      })
 
       let started = false
       let gameOver = false
-      let areaClear = false
       let paddleCooldown = false
 
       let paddleMomentum = 0
@@ -142,9 +175,14 @@
       }
 
       function generateBlocks() {
-        if (!started || areaClear) {
-
-        }
+        blocks.forEach((e) => {
+          if (e.status === 1) {
+            ctx.fillStyle = e.hits === 2 ? e.colour : e.damagedColour
+            ctx.beginPath()
+            ctx.roundRect(e.x, e.y, e.w, e.h, 3)
+            ctx.fill()
+          }
+        })
       }
 
       /*
@@ -165,12 +203,12 @@
       })
 
       document.addEventListener("keydown", (e) => {
-        if (!started && (e.key === "ArrowUp" || e.key === "w")) {
+        if (!started && (e.key === "ArrowUp" || e.key === "w" || e.key === " ")) {
           started = true
           if (paddleMomentum === 0) {
-            ballMomentumX = Math.random() < 0.5 ? -4 : 4
+            ballMomentumX = Math.random() < 0.5 ? -3 : 3
           } else {
-            ballMomentumX = paddleMomentum < 0 ? -4 : 4
+            ballMomentumX = paddleMomentum < 0 ? -3 : 3
           }
           ballMomentumY = -5
         }
@@ -214,14 +252,33 @@
             }
           }
         }
-        if (BallPos.y > PaddlePos.y) paddleCooldown = false
         if (BallPos.y + BallRad >= PaddlePos.y && BallPos.y - BallRad <= PaddlePos.y + PaddleH) {
           if (BallPos.x + BallRad >= PaddlePos.x && BallPos.x - BallRad <= PaddlePos.x + PaddleW) {
-            if (!paddleCooldown) {
-              paddleCooldown = true
-              ballMomentumY *= -1
+            ballMomentumY = -Math.abs(ballMomentumY)
+          }
+        }
+        blocks.some((e) => {
+          if (e.status === 1) {
+            // Ball overlap check
+            if (BallPos.x + BallRad >= e.x && BallPos.x - BallRad <= e.x + e.w && BallPos.y + BallRad >= e.y && BallPos.y - BallRad <= e.y + e.h) {
+              const overlapL = BallPos.x + BallRad - e.x
+              const overlapR = (e.x + e.w) - (BallPos.x - BallRad)
+              const overlapT = BallPos.y - BallRad - e.y
+              const overlapB = (e.y + e.h) - (BallPos.y + BallRad)
+              const minOverlap = Math.min(overlapL, overlapR, overlapT, overlapB)
+              if (minOverlap === overlapL || minOverlap === overlapR) ballMomentumX *= -1
+              else ballMomentumY *= -1
+              e.hits--
+              if (e.hits <= 0) e.status = 0
+              return true
             }
           }
+        })
+
+        if (blocks.every(e => e.status === 0)) {
+          gameOver = true
+          alert('You Win')
+          location.reload()
         }
 
         BallPos.x = BallPos.x + ballMomentumX
@@ -238,6 +295,7 @@
         drawBackground()
         drawPaddle()
         drawBall()
+        generateBlocks()
       }, 10)
 
     })
