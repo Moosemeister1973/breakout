@@ -60,11 +60,21 @@
       position: relative;
       width: 600px;
     }
+
+    div#lifeCounter {
+      position: absolute;
+      top: 25%;
+      left: 5%;
+      border: 2px solid white;
+    }
   </style>
 
 </head>
 
 <body>
+  <div id="lifeCounter" class="silkscreen-regular">
+    3 Lives Remaining 
+  </div>
   <div id="container">
     <div id="titleContainer">
       <div id="title" class="silkscreen-regular">
@@ -79,6 +89,7 @@
     document.addEventListener("DOMContentLoaded", () => {
 
       const canvas = document.getElementById('canvas')
+      const lifeDisplay = document.getElementById('lifeCounter')
       const ctx = canvas.getContext('2d')
       const bg_p_c = ['#262626', '#363636']
       const bg_p_size = 30
@@ -94,12 +105,17 @@
       const keysHeld = new Set()
 
       let blocks = []
+
       let started = false
       let gameOver = false
       let areaClear = false
+      let paddleCooldown = false
+
       let paddleMomentum = 0
       let ballMomentumX = 0
       let ballMomentumY = 0
+
+      let lives = 3
 
       function drawBackground() {
         for (let row = 0; row < canvas.height / bg_p_size; row++) {
@@ -151,7 +167,11 @@
       document.addEventListener("keydown", (e) => {
         if (!started && (e.key === "ArrowUp" || e.key === "w")) {
           started = true
-          ballMomentumX = paddleMomentum !== 0 ? paddleMomentum : 2
+          if (paddleMomentum === 0) {
+            ballMomentumX = Math.random() < 0.5 ? -4 : 4
+          } else {
+            ballMomentumX = paddleMomentum < 0 ? -4 : 4
+          }
           ballMomentumY = -5
         }
       })
@@ -180,9 +200,28 @@
           ballMomentumY *= -1
         }
         if (BallPos.y + BallRad > 450) {
-          gameOver = true
-          alert("FAILURE")
-          location.reload()
+          if (started) {
+            lives--
+            if (lives === 1) lifeDisplay.innerText = lives + ' Life Remaining'
+            else if (lives < 1) lifeDisplay.innerText = 'Out of Lives'
+            else lifeDisplay.innerText = lives + ' Lives Remaining'
+            if (lives <= 0) {
+              gameOver = true
+              alert("FAILURE")
+              location.reload()
+            } else {
+              started = false
+            }
+          }
+        }
+        if (BallPos.y > PaddlePos.y) paddleCooldown = false
+        if (BallPos.y + BallRad >= PaddlePos.y && BallPos.y - BallRad <= PaddlePos.y + PaddleH) {
+          if (BallPos.x + BallRad >= PaddlePos.x && BallPos.x - BallRad <= PaddlePos.x + PaddleW) {
+            if (!paddleCooldown) {
+              paddleCooldown = true
+              ballMomentumY *= -1
+            }
+          }
         }
 
         BallPos.x = BallPos.x + ballMomentumX
@@ -191,7 +230,10 @@
         if (PaddlePos.x < 1) PaddlePos.x = 1
         if (PaddlePos.x > 509) PaddlePos.x = 509
 
-        if (!started) BallPos.x = PaddlePos.x + 45
+        if (!started) {
+          BallPos.x = PaddlePos.x + 45
+          BallPos.y = PaddlePos.y - 15
+        }
 
         drawBackground()
         drawPaddle()
