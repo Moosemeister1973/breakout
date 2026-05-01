@@ -2,13 +2,305 @@
 <html>
 
 <head>
+
   <title>Breakout Thingy</title>
-  <link rel="stylesheet" type="text/css" href="styles/styles.css" />
-  <script src="scripts/game.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    .silkscreen-regular {
+      font-family: "Silkscreen", sans-serif;
+      font-weight: 400;
+      font-style: normal;
+      color: white;
+      font-size: xx-large;
+    }
+
+    .silkscreen-bold {
+      font-family: "Silkscreen", sans-serif;
+      font-weight: 700;
+      font-style: normal;
+      color: white;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      background-color: black;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    canvas {
+      border: 5px solid gray;
+      background-color: white;
+    }
+
+    div#titleContainer {
+      display: flex;
+      justify-content: center;
+      text-align: center;
+      position: absolute;
+      width: 100%;
+      bottom: 100%;
+      margin-bottom: 10px;
+    }
+
+    div#title {
+      position: relative;
+      text-align: center;
+      width: fit-content;
+      border: 2px solid white;
+    }
+
+    div#container {
+      position: relative;
+      width: 600px;
+    }
+
+    div#lifeCounter {
+      position: absolute;
+      top: 25%;
+      left: 5%;
+      border: 2px solid white;
+    }
+  </style>
+
 </head>
 
 <body>
-  <canvas id="canvas"></canvas>
+  <div id="lifeCounter" class="silkscreen-regular">
+    3 Lives Remaining
+  </div>
+  <div id="container">
+    <div id="titleContainer">
+      <div id="title" class="silkscreen-regular">
+        Breakout Game
+      </div>
+    </div>
+
+    <canvas id="canvas" width="600" height="450"></canvas>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+
+      const canvas = document.getElementById('canvas')
+      const lifeDisplay = document.getElementById('lifeCounter')
+      const ctx = canvas.getContext('2d')
+      const bg_p_c = ['#262626', '#363636']
+      const bg_p_size = 30
+      const PaddleW = 90
+      const PaddleH = 10
+      const PaddlePos = { x: 255, y: 385 }
+      const BallRad = 9
+      const BallPos = { x: 300, y: 370 }
+
+      const keysHeld = new Set()
+
+      const blocks = [
+        // Row 1 - Red
+        { x: 75, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
+        { x: 140, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
+        { x: 205, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
+        { x: 270, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
+        { x: 335, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
+        { x: 400, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
+        { x: 465, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
+        // Row 2 - Yellow
+        { x: 75, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
+        { x: 140, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
+        { x: 205, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
+        { x: 270, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
+        { x: 335, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
+        { x: 400, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
+        { x: 465, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
+        // Row 3 - Green
+        { x: 75, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
+        { x: 140, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
+        { x: 205, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
+        { x: 270, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
+        { x: 335, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
+        { x: 400, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
+        { x: 465, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
+        // Row 4 - Cyan
+        { x: 75, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
+        { x: 140, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
+        { x: 205, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
+        { x: 270, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
+        { x: 335, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
+        { x: 400, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
+        { x: 465, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' }
+      ]
+
+      blocks.forEach((e) => {
+        e.hits = Math.random() < 0.8 ? 1 : 2
+      })
+
+      let started = false
+      let gameOver = false
+      let paddleCooldown = false
+
+      let paddleMomentum = 0
+      let ballMomentumX = 0
+      let ballMomentumY = 0
+
+      let lives = 3
+
+      function drawBackground() {
+        for (let row = 0; row < canvas.height / bg_p_size; row++) {
+          for (let col = 0; col < canvas.width / bg_p_size; col++) {
+            ctx.fillStyle = (row + col) % 2 === 0 ? bg_p_c[0] : bg_p_c[1]
+            ctx.fillRect(col * bg_p_size, row * bg_p_size, bg_p_size, bg_p_size)
+          }
+        }
+      }
+
+      function drawPaddle() {
+        ctx.fillStyle = '#ffffff'
+        ctx.beginPath()
+        ctx.roundRect(PaddlePos.x, PaddlePos.y, PaddleW, PaddleH, 3)
+        ctx.fill()
+        return
+      }
+
+      function drawBall() {
+        ctx.fillStyle = '#ffffff'
+        ctx.beginPath()
+        ctx.arc(BallPos.x, BallPos.y, BallRad, 0, Math.PI * 2)
+        ctx.fill()
+      }
+
+      function generateBlocks() {
+        blocks.forEach((e) => {
+          if (e.status === 1) {
+            ctx.fillStyle = e.hits === 2 ? e.colour : e.damagedColour
+            ctx.beginPath()
+            ctx.roundRect(e.x, e.y, e.w, e.h, 3)
+            ctx.fill()
+          }
+        })
+      }
+
+      /*
+      if (!started && e.key === "w" || e.key === "ArrowUp") {
+          started = true
+          ballMomentumX = paddleMomentum
+          ballMomentumY = 5
+        }
+      */
+
+
+      document.addEventListener("keydown", (e) => {
+        keysHeld.add(e.key)
+      })
+
+      document.addEventListener("keyup", (e) => {
+        keysHeld.delete(e.key)
+      })
+
+      document.addEventListener("keydown", (e) => {
+        if (!started && (e.key === "ArrowUp" || e.key === "w" || e.key === " ")) {
+          started = true
+          if (paddleMomentum === 0) {
+            ballMomentumX = Math.random() < 0.5 ? -3 : 3
+          } else {
+            ballMomentumX = paddleMomentum < 0 ? -3 : 3
+          }
+          ballMomentumY = -5
+        }
+      })
+
+      let gameTick = setInterval(() => {
+
+        if (gameOver) {
+          clearInterval(gameTick)
+          return
+        }
+
+        if (keysHeld.has("ArrowLeft") || keysHeld.has("a")) {
+          paddleMomentum = -5
+        } else if (keysHeld.has("ArrowRight") || keysHeld.has("d")) {
+          paddleMomentum = 5
+        } else {
+          paddleMomentum = 0
+        }
+
+        PaddlePos.x = PaddlePos.x + paddleMomentum
+
+        if (BallPos.x + BallRad > 600 || BallPos.x - BallRad < 0) {
+          ballMomentumX *= -1
+        }
+        if (BallPos.y - BallRad < 0) {
+          ballMomentumY *= -1
+        }
+        if (BallPos.y + BallRad > 450) {
+          if (started) {
+            lives--
+            if (lives === 1) lifeDisplay.innerText = lives + ' Life Remaining'
+            else if (lives < 1) lifeDisplay.innerText = 'Out of Lives'
+            else lifeDisplay.innerText = lives + ' Lives Remaining'
+            if (lives <= 0) {
+              gameOver = true
+              alert("FAILURE")
+              location.reload()
+            } else {
+              started = false
+            }
+          }
+        }
+        if (BallPos.y + BallRad >= PaddlePos.y && BallPos.y - BallRad <= PaddlePos.y + PaddleH) {
+          if (BallPos.x + BallRad >= PaddlePos.x && BallPos.x - BallRad <= PaddlePos.x + PaddleW) {
+            ballMomentumY = -Math.abs(ballMomentumY)
+          }
+        }
+        blocks.some((e) => {
+          if (e.status === 1) {
+            // Ball overlap check
+            if (BallPos.x + BallRad >= e.x && BallPos.x - BallRad <= e.x + e.w && BallPos.y + BallRad >= e.y && BallPos.y - BallRad <= e.y + e.h) {
+              const overlapL = BallPos.x + BallRad - e.x
+              const overlapR = (e.x + e.w) - (BallPos.x - BallRad)
+              const overlapT = BallPos.y - BallRad - e.y
+              const overlapB = (e.y + e.h) - (BallPos.y + BallRad)
+              const minOverlap = Math.min(overlapL, overlapR, overlapT, overlapB)
+              if (minOverlap === overlapL || minOverlap === overlapR) ballMomentumX *= -1
+              else ballMomentumY *= -1
+              e.hits--
+              if (e.hits <= 0) e.status = 0
+              return true
+            }
+          }
+        })
+
+        if (blocks.every(e => e.status === 0)) {
+          gameOver = true
+          alert('You Win')
+          location.reload()
+        }
+
+        BallPos.x = BallPos.x + ballMomentumX
+        BallPos.y = BallPos.y + ballMomentumY
+
+        if (PaddlePos.x < 1) PaddlePos.x = 1
+        if (PaddlePos.x > 509) PaddlePos.x = 509
+
+        if (!started) {
+          BallPos.x = PaddlePos.x + 45
+          BallPos.y = PaddlePos.y - 15
+        }
+
+        drawBackground()
+        drawPaddle()
+        drawBall()
+        generateBlocks()
+      }, 10)
+
+    })
+  </script>
+
 </body>
 
 </html>
