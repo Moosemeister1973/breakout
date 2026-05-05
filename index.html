@@ -93,11 +93,9 @@
       const ctx = canvas.getContext('2d')
       const bg_p_c = ['#262626', '#363636']
       const bg_p_size = 30
-      const PaddleW = 90
-      const PaddleH = 10
-      const PaddlePos = { x: 255, y: 385 }
-      const BallRad = 9
-      const BallPos = { x: 300, y: 370 }
+      const PaddleData = { x: 255, y: 385, w: 90, h: 10, xMomentum: 0 }
+      let PaddleCentre = PaddleData.x + PaddleData.w / 2
+      const BallData = { xPos: 300, yPos: 370, Rad: 9, xMomentum: 0, yMomentum: 0 }
 
       const keysHeld = new Set()
 
@@ -142,11 +140,6 @@
 
       let started = false
       let gameOver = false
-      let paddleCooldown = false
-
-      let paddleMomentum = 0
-      let ballMomentumX = 0
-      let ballMomentumY = 0
 
       let lives = 3
 
@@ -162,7 +155,7 @@
       function drawPaddle() {
         ctx.fillStyle = '#ffffff'
         ctx.beginPath()
-        ctx.roundRect(PaddlePos.x, PaddlePos.y, PaddleW, PaddleH, 3)
+        ctx.roundRect(PaddleData.x, PaddleData.y, PaddleData.w, PaddleData.h, 3)
         ctx.fill()
         return
       }
@@ -170,7 +163,7 @@
       function drawBall() {
         ctx.fillStyle = '#ffffff'
         ctx.beginPath()
-        ctx.arc(BallPos.x, BallPos.y, BallRad, 0, Math.PI * 2)
+        ctx.arc(BallData.xPos, BallData.yPos, BallData.Rad, 0, Math.PI * 2)
         ctx.fill()
       }
 
@@ -185,15 +178,6 @@
         })
       }
 
-      /*
-      if (!started && e.key === "w" || e.key === "ArrowUp") {
-          started = true
-          ballMomentumX = paddleMomentum
-          ballMomentumY = 5
-        }
-      */
-
-
       document.addEventListener("keydown", (e) => {
         keysHeld.add(e.key)
       })
@@ -205,12 +189,12 @@
       document.addEventListener("keydown", (e) => {
         if (!started && (e.key === "ArrowUp" || e.key === "w" || e.key === " ")) {
           started = true
-          if (paddleMomentum === 0) {
-            ballMomentumX = Math.random() < 0.5 ? -3 : 3
+          if (PaddleData.xMomentum === 0) {
+            BallData.xMomentum = Math.random() < 0.5 ? -3 : 3
           } else {
-            ballMomentumX = paddleMomentum < 0 ? -3 : 3
+            BallData.xMomentum = PaddleData.xMomentum < 0 ? -3 : 3
           }
-          ballMomentumY = -5
+          BallData.yMomentum = -5
         }
       })
 
@@ -222,22 +206,22 @@
         }
 
         if (keysHeld.has("ArrowLeft") || keysHeld.has("a")) {
-          paddleMomentum = -5
+          PaddleData.xMomentum = -5
         } else if (keysHeld.has("ArrowRight") || keysHeld.has("d")) {
-          paddleMomentum = 5
+          PaddleData.xMomentum = 5
         } else {
-          paddleMomentum = 0
+          PaddleData.xMomentum = 0
         }
 
-        PaddlePos.x = PaddlePos.x + paddleMomentum
+        PaddleData.x = PaddleData.x + PaddleData.xMomentum
 
-        if (BallPos.x + BallRad > 600 || BallPos.x - BallRad < 0) {
-          ballMomentumX *= -1
+        if (BallData.xPos + BallData.Rad > 600 || BallData.xPos - BallData.Rad < 0) {
+          BallData.xMomentum *= -1
         }
-        if (BallPos.y - BallRad < 0) {
-          ballMomentumY *= -1
+        if (BallData.yPos - BallData.Rad < 0) {
+          BallData.yMomentum *= -1
         }
-        if (BallPos.y + BallRad > 450) {
+        if (BallData.yPos + BallData.Rad > 450) {
           if (started) {
             lives--
             if (lives === 1) lifeDisplay.innerText = lives + ' Life Remaining'
@@ -252,22 +236,23 @@
             }
           }
         }
-        if (BallPos.y + BallRad >= PaddlePos.y && BallPos.y - BallRad <= PaddlePos.y + PaddleH) {
-          if (BallPos.x + BallRad >= PaddlePos.x && BallPos.x - BallRad <= PaddlePos.x + PaddleW) {
-            ballMomentumY = -Math.abs(ballMomentumY)
+        if (BallData.yPos + BallData.Rad >= PaddleData.y && BallData.yPos - BallData.Rad <= PaddleData.y + PaddleData.h) {
+          if (BallData.xPos + BallData.Rad >= PaddleData.x && BallData.xPos - BallData.Rad <= PaddleData.x + PaddleData.w) {
+            
+            BallData.yMomentum = -Math.abs(BallData.yMomentum)
           }
         }
         blocks.some((e) => {
           if (e.status === 1) {
             // Ball overlap check
-            if (BallPos.x + BallRad >= e.x && BallPos.x - BallRad <= e.x + e.w && BallPos.y + BallRad >= e.y && BallPos.y - BallRad <= e.y + e.h) {
-              const overlapL = BallPos.x + BallRad - e.x
-              const overlapR = (e.x + e.w) - (BallPos.x - BallRad)
-              const overlapT = BallPos.y - BallRad - e.y
-              const overlapB = (e.y + e.h) - (BallPos.y + BallRad)
+            if (BallData.xPos + BallData.Rad >= e.x && BallData.xPos - BallData.Rad <= e.x + e.w && BallData.yPos + BallData.Rad >= e.y && BallData.yPos - BallData.Rad <= e.y + e.h) {
+              const overlapL = BallData.xPos + BallData.Rad - e.x
+              const overlapR = (e.x + e.w) - (BallData.xPos - BallData.Rad)
+              const overlapT = BallData.yPos - BallData.Rad - e.y
+              const overlapB = (e.y + e.h) - (BallData.yPos + BallData.Rad)
               const minOverlap = Math.min(overlapL, overlapR, overlapT, overlapB)
-              if (minOverlap === overlapL || minOverlap === overlapR) ballMomentumX *= -1
-              else ballMomentumY *= -1
+              if (minOverlap === overlapL || minOverlap === overlapR) BallData.xMomentum *= -1
+              else BallData.yMomentum *= -1
               e.hits--
               if (e.hits <= 0) e.status = 0
               return true
@@ -281,22 +266,22 @@
           location.reload()
         }
 
-        BallPos.x = BallPos.x + ballMomentumX
-        BallPos.y = BallPos.y + ballMomentumY
+        BallData.xPos = BallData.xPos + BallData.xMomentum
+        BallData.yPos = BallData.yPos + BallData.yMomentum
 
-        if (PaddlePos.x < 1) PaddlePos.x = 1
-        if (PaddlePos.x > 509) PaddlePos.x = 509
+        if (PaddleData.x < 1) PaddleData.x = 1
+        if (PaddleData.x > 509) PaddleData.x = 509
 
         if (!started) {
-          BallPos.x = PaddlePos.x + 45
-          BallPos.y = PaddlePos.y - 15
+          BallData.xPos = PaddleData.x + 45
+          BallData.yPos = PaddleData.y - 15
         }
 
         drawBackground()
         drawPaddle()
         drawBall()
         generateBlocks()
-      }, 10)
+      }, 30)
 
     })
   </script>
