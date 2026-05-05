@@ -87,15 +87,13 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-
       const canvas = document.getElementById('canvas')
       const lifeDisplay = document.getElementById('lifeCounter')
       const ctx = canvas.getContext('2d')
       const bg_p_c = ['#262626', '#363636']
       const bg_p_size = 30
       const PaddleData = { x: 255, y: 385, w: 90, h: 10, xMomentum: 0 }
-      let PaddleCentre = PaddleData.x + PaddleData.w / 2
-      const BallData = { xPos: 300, yPos: 370, Rad: 9, xMomentum: 0, yMomentum: 0 }
+      const BallData = { xPos: 300, yPos: 370, Rad: 9, xMomentum: 0, yMomentum: 0, truePosX: 300, truePosY: 370 }
 
       const keysHeld = new Set()
 
@@ -190,13 +188,15 @@
         if (!started && (e.key === "ArrowUp" || e.key === "w" || e.key === " ")) {
           started = true
           if (PaddleData.xMomentum === 0) {
-            BallData.xMomentum = Math.random() < 0.5 ? -3 : 3
+            BallData.xMomentum = Math.random() < 0.5 ? -8 : 8
           } else {
-            BallData.xMomentum = PaddleData.xMomentum < 0 ? -3 : 3
+            BallData.xMomentum = PaddleData.xMomentum < 0 ? -8 : 8
           }
-          BallData.yMomentum = -5
+          BallData.yMomentum = -8
         }
       })
+
+      
 
       let gameTick = setInterval(() => {
 
@@ -206,9 +206,9 @@
         }
 
         if (keysHeld.has("ArrowLeft") || keysHeld.has("a")) {
-          PaddleData.xMomentum = -5
+          PaddleData.xMomentum = -12
         } else if (keysHeld.has("ArrowRight") || keysHeld.has("d")) {
-          PaddleData.xMomentum = 5
+          PaddleData.xMomentum = 12
         } else {
           PaddleData.xMomentum = 0
         }
@@ -266,14 +266,16 @@
           location.reload()
         }
 
-        BallData.xPos = BallData.xPos + BallData.xMomentum
-        BallData.yPos = BallData.yPos + BallData.yMomentum
+        BallData.truePosX = BallData.truePosX + BallData.xMomentum
+        BallData.truePosY = BallData.truePosY + BallData.yMomentum
+        BallData.xPos = Math.floor(truePosX + 0.5)
+        BallData.yPos = Math.floor(truePosY + 0.5)
 
         if (PaddleData.x < 1) PaddleData.x = 1
         if (PaddleData.x > 509) PaddleData.x = 509
 
         if (!started) {
-          BallData.xPos = PaddleData.x + 45
+          BallData.xPos = PaddleData.x + PaddleData.w / 2
           BallData.yPos = PaddleData.y - 15
         }
 
