@@ -132,14 +132,34 @@
         { x: 465, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' }
       ]
 
+      let highHitChance = 0.8
+      let lowHitCount = 1
+      let highHitCount = 2
+
       blocks.forEach((e) => {
-        e.hits = Math.random() < 0.8 ? 1 : 2
+        e.hits = Math.random() < highHitChance ? lowHitCount : highHitCount
       })
 
       let started = false
       let gameOver = false
 
+      let level = 1
       let lives = 3
+
+      function resetBlocks() {
+        if (highHitChance <= 0) {
+            highHitChance = 0.8
+            Math.random() < 0.5 ? lowHitCount++ : highHitCount++
+          } else {
+            highHitChance -= 0.2
+          }
+        blocks.forEach((e) => {
+          e.hits = Math.random() < highHitChance ? lowHitCount : highHitCount
+          e.status = 1
+        })
+        lives++
+        level++
+      }
 
       function drawBackground() {
         for (let row = 0; row < canvas.height / bg_p_size; row++) {
@@ -252,7 +272,7 @@
 
         blocks.some((e) => {
           if (e.status === 1) {
-            // Ball overlap check  e.x = 45, e.w = 60, e.y = 60, e.h = 20, BallData.xPos = 38, BallData.Rad = 9, BallData.yPos = 58
+            // Ball overlap check
             if (BallData.xPos + BallData.Rad >= e.x && BallData.xPos - BallData.Rad <= e.x + e.w && BallData.yPos + BallData.Rad >= e.y && BallData.yPos - BallData.Rad <= e.y + e.h) {
               const overlapL = BallData.xPos + BallData.Rad - e.x 
               const overlapR = (e.x + e.w) - (BallData.xPos - BallData.Rad) 
@@ -269,9 +289,9 @@
         })
 
         if (blocks.every(e => e.status === 0)) {
-          gameOver = true
-          alert('You Win')
-          location.reload()
+          started = false
+          alert('Level ' + level + 'complete.')
+          generateBlocks()
         }
 
         BallData.truePosX = BallData.truePosX + BallData.xMomentum
