@@ -158,6 +158,7 @@
           e.status = 1
         })
         lives++
+        lifeDisplay.innerText = lives === 1 ? lives + ' Life Remaining' : lives + ' Lives Remaining'
         level++
       }
 
@@ -221,7 +222,6 @@
       let gameTick = setInterval(() => {
 
         if (gameOver) {
-          clearInterval(gameTick)
           return
         }
 
@@ -290,7 +290,7 @@
 
         if (blocks.every(e => e.status === 0)) {
           started = false
-          generateBlocks()
+          resetBlocks()
         }
 
         BallData.truePosX = BallData.truePosX + BallData.xMomentum
