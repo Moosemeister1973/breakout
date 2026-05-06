@@ -215,13 +215,18 @@
 
         PaddleData.x = PaddleData.x + PaddleData.xMomentum
 
-        if (BallData.xPos + BallData.Rad > 600 || BallData.xPos - BallData.Rad < 0) {
-          BallData.xMomentum *= -1
+        if (BallData.xPos + BallData.Rad > 600) {
+          BallData.xMomentum = -Math.abs(BallData.xMomentum)
+        }
+        if (BallData.xPos - BallData.Rad < 0) {
+          BallData.xMomentum = Math.abs(BallData.xMomentum)
         }
         if (BallData.yPos - BallData.Rad < 0) {
-          BallData.yMomentum *= -1
+          BallData.yMomentum = Math.abs(BallData.yMomentum)
         }
         if (BallData.yPos + BallData.Rad > 450) {
+          BallData.xMomentum = 0
+          BallData.yMomentum = 0
           if (started) {
             lives--
             if (lives === 1) lifeDisplay.innerText = lives + ' Life Remaining'
@@ -236,23 +241,26 @@
             }
           }
         }
-        if (BallData.yPos + BallData.Rad >= PaddleData.y && BallData.yPos - BallData.Rad <= PaddleData.y + PaddleData.h) {
-          if (BallData.xPos + BallData.Rad >= PaddleData.x && BallData.xPos - BallData.Rad <= PaddleData.x + PaddleData.w) {
-            
-            BallData.yMomentum = -Math.abs(BallData.yMomentum)
+        if (started) {
+          if (BallData.yPos + BallData.Rad >= PaddleData.y && BallData.yPos - BallData.Rad <= PaddleData.y + PaddleData.h) {
+            if (BallData.xPos + BallData.Rad >= PaddleData.x && BallData.xPos - BallData.Rad <= PaddleData.x + PaddleData.w) {
+              BallData.xMomentum += (BallData.xPos - (PaddleData.x + PaddleData.w / 2)) * 0.05
+              BallData.yMomentum = -Math.abs(BallData.yMomentum)
+            }
           }
         }
+
         blocks.some((e) => {
           if (e.status === 1) {
-            // Ball overlap check
+            // Ball overlap check  e.x = 45, e.w = 60, e.y = 60, e.h = 20, BallData.xPos = 38, BallData.Rad = 9, BallData.yPos = 58
             if (BallData.xPos + BallData.Rad >= e.x && BallData.xPos - BallData.Rad <= e.x + e.w && BallData.yPos + BallData.Rad >= e.y && BallData.yPos - BallData.Rad <= e.y + e.h) {
-              const overlapL = BallData.xPos + BallData.Rad - e.x
-              const overlapR = (e.x + e.w) - (BallData.xPos - BallData.Rad)
-              const overlapT = BallData.yPos - BallData.Rad - e.y
-              const overlapB = (e.y + e.h) - (BallData.yPos + BallData.Rad)
+              const overlapL = BallData.xPos + BallData.Rad - e.x 
+              const overlapR = (e.x + e.w) - (BallData.xPos - BallData.Rad) 
+              const overlapT = BallData.yPos + BallData.Rad - e.y 
+              const overlapB = (e.y + e.h) - (BallData.yPos - BallData.Rad)
               const minOverlap = Math.min(overlapL, overlapR, overlapT, overlapB)
-              if (minOverlap === overlapL || minOverlap === overlapR) BallData.xMomentum *= -1
-              else BallData.yMomentum *= -1
+              if (minOverlap === overlapT || minOverlap === overlapB) BallData.yMomentum *= -1
+              else BallData.xMomentum *= -1
               e.hits--
               if (e.hits <= 0) e.status = 0
               return true
@@ -268,8 +276,8 @@
 
         BallData.truePosX = BallData.truePosX + BallData.xMomentum
         BallData.truePosY = BallData.truePosY + BallData.yMomentum
-        BallData.xPos = Math.floor(truePosX + 0.5)
-        BallData.yPos = Math.floor(truePosY + 0.5)
+        BallData.xPos = Math.floor(BallData.truePosX + 0.5)
+        BallData.yPos = Math.floor(BallData.truePosY + 0.5)
 
         if (PaddleData.x < 1) PaddleData.x = 1
         if (PaddleData.x > 509) PaddleData.x = 509
@@ -277,6 +285,8 @@
         if (!started) {
           BallData.xPos = PaddleData.x + PaddleData.w / 2
           BallData.yPos = PaddleData.y - 15
+          BallData.truePosX = PaddleData.x + PaddleData.w / 2
+          BallData.truePosY = PaddleData.y - 15
         }
 
         drawBackground()
