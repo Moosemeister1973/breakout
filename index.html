@@ -34,7 +34,7 @@
       margin: 0;
     }
 
-    canvas {
+    #canvas {
       border: 5px solid gray;
       background-color: white;
     }
@@ -67,6 +67,12 @@
       left: 5%;
       border: 2px solid white;
     }
+
+    * {
+      -webkit-touch-callout: none;
+      user-select: none;
+      touch-action: none;
+    }
   </style>
 
 </head>
@@ -82,26 +88,39 @@
       </div>
     </div>
     <canvas id="canvas" width="600" height="450"></canvas>
-    <div id="failureScreen" class="silkscreen-regular"
+    <canvas id="startScreen" width="600" height="450"
+      style="display: block; position: absolute; top: 5px; left: 5px; transform: none; background-color: transparent;"></canvas>
+    <div id="failureText" class="silkscreen-regular"
       style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 60px; color: white; pointer-events: none;">
       FAILURE
     </div>
-    <div id="failureScreen2" class="silkscreen-regular"
+    <div id="startText" class="silkscreen-regular"
+      style="display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; color: white; pointer-events: none;">
+      Press Enter or tap screen to Start (or don't if you think you can win blind)
+    </div>
+    <div id="failureText2" class="silkscreen-regular"
       style="display: none; position: absolute; top: 65%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; color: white; pointer-events: none;">
       Press Enter to Restart
     </div>
+    <div id="touchScreenSpaceBar" class="silkscreen-regular"
+      style="display: block; position: absolute; width: fit-content; top: 105%; left: 50%; transform: translate(-50%, 0%); font-size: 40px; color: white; border: 5px solid grey;">
+      The Humble Space Bar</div>
+
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
 
       const canvas = document.getElementById('canvas')
+      const startScreen = document.getElementById('startScreen')
+      const startCTX = startScreen.getContext('2d')
       const lifeDisplay = document.getElementById('lifeCounter')
       const ctx = canvas.getContext('2d')
       const bg_p_c = ['#262626', '#363636']
       const bg_p_size = 30
       const PaddleData = { x: 255, y: 385, w: 90, h: 10, xMomentum: 0 }
       const BallData = { xPos: 300, yPos: 370, Rad: 9, xMomentum: 0, yMomentum: 0, truePosX: 300, truePosY: 370 }
+      const mobileSpace = document.getElementById('touchScreenSpaceBar')
 
       const keysHeld = new Set()
 
@@ -148,14 +167,20 @@
         e.hits = Math.random() < highHitChance ? lowHitCount : highHitCount
       })
 
+      let startScreenOver = false
       let started = false
       let gameOver = false
       let paddleCooldown = false
+      let usingTouch = false
 
       let level = 1
       let lives = 3
 
       lifeDisplay.innerText = lives > 1 ? lives + ' Lives Remaining' : lives + ' Life Remaining'
+
+      // Fill in startScreen
+      startCTX.fillStyle = 'Green'
+      startCTX.fillRect(0, 0, startScreen.width, startScreen.height)
 
       function resetBlocks() {
         if (highHitChance <= 0) {
@@ -190,11 +215,31 @@
         return
       }
 
+      const ballTrail = []
+      const trailLength = 5
+      let stepIteration = 0
+      const stepIterationLength = 0
+
       function drawBall() {
+
+        ballTrail.forEach((pos, index) => {
+          ctx.globalAlpha = (index / trailLength) * 0.5
+          ctx.fillStyle = '#ffffff'
+          ctx.beginPath()
+          ctx.arc(pos.x, pos.y, BallData.Rad * (index / trailLength), 0, Math.PI * 2)
+          ctx.fill()
+        })
+
+        ctx.globalAlpha = 1
         ctx.fillStyle = '#ffffff'
         ctx.beginPath()
         ctx.arc(BallData.xPos, BallData.yPos, BallData.Rad, 0, Math.PI * 2)
         ctx.fill()
+        if (stepIteration >= stepIterationLength) {
+          stepIteration = 0
+          ballTrail.push({ x: BallData.xPos, y: BallData.yPos })
+          if (ballTrail.length > trailLength) ballTrail.shift()
+        } else stepIteration++
       }
 
       function generateBlocks() {
@@ -208,14 +253,75 @@
         })
       }
 
+      document.addEventListener('touchstart', () => { usingTouch = true }, { once: true })
+      startScreen.addEventListener('touchstart', (e) => {
+        e.preventDefault()
+        clearStartScreen()
+      })
+      mobileSpace.addEventListener('touchstart', () => {
+        if (!started) {
+          started = true
+          if (PaddleData.xMomentum === 0) {
+            BallData.xMomentum = Math.random() < 0.5 ? -8 : 8
+          } else {
+            BallData.xMomentum = PaddleData.xMomentum < 0 ? -8 : 8
+          }
+          BallData.yMomentum = -8
+        }
+      })
+      document.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0]
+        const x = touch.clientX
+        if (x < screen.width / 2) {
+          PaddleData.xMomentum = -12
+        } else PaddleData.xMomentum = 12
+      })
+      document.addEventListener('touchend', () => {
+        PaddleData.xMomentum = 0
+      })
+
+
       document.addEventListener("keydown", (e) => {
         if (e.key === 'Enter' && gameOver) location.reload()
+        if (e.key === 'Enter' && !startScreenOver) clearStartScreen()
         keysHeld.add(e.key)
       })
 
       document.addEventListener("keyup", (e) => {
         keysHeld.delete(e.key)
       })
+
+      function clearStartScreen() {
+        const totalPixels = []
+        for (let row = 0; row < startScreen.height; row++) {
+          for (let col = 0; col < canvas.width; col++) {
+            totalPixels.push({ x: col, y: row })
+          }
+        }
+
+        for (let i = totalPixels.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [totalPixels[i], totalPixels[j]] = [totalPixels[j], totalPixels[i]]
+        }
+
+        let pixelsDrawn = 0
+        const pixelsPerTick = 3000
+
+        const startInterval = setInterval(() => {
+          for (let i = 0; i < pixelsPerTick && pixelsDrawn < totalPixels.length; i++, pixelsDrawn++) {
+            const { x, y } = totalPixels[pixelsDrawn]
+            startCTX.clearRect(x, y, 1, 1)
+          }
+
+          document.getElementById('startText').style.display = 'none'
+
+          if (pixelsDrawn >= totalPixels.length) {
+            clearInterval(startInterval)
+            startScreen.style.display = 'none'
+          }
+        }, 30)
+        startScreenOver = true
+      }
 
       function showFailureScreen() {
         clearInterval(gameTick)
@@ -246,8 +352,8 @@
 
           if (pixelsDrawn >= totalPixels.length) {
             clearInterval(failureInterval)
-            document.getElementById('failureScreen').style.display = 'block'
-            document.getElementById('failureScreen2').style.display = 'block'
+            document.getElementById('failureText').style.display = 'block'
+            document.getElementById('failureText2').style.display = 'block'
           }
         }, 30)
       }
@@ -339,7 +445,7 @@
           PaddleData.xMomentum = -12
         } else if (keysHeld.has("ArrowRight") || keysHeld.has("d")) {
           PaddleData.xMomentum = 12
-        } else {
+        } else if (!usingTouch) {
           PaddleData.xMomentum = 0
         }
 
