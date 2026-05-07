@@ -150,6 +150,7 @@
 
       let started = false
       let gameOver = false
+      let paddleCooldown = false
 
       let level = 1
       let lives = 3
@@ -289,12 +290,15 @@
       }
 
       function paddleCollisionCheck() {
-        if (started) {
-          if (BallData.yPos + BallData.Rad >= PaddleData.y && BallData.yPos - BallData.Rad <= PaddleData.y + PaddleData.h) {
-            if (BallData.xPos + BallData.Rad >= PaddleData.x && BallData.xPos - BallData.Rad <= PaddleData.x + PaddleData.w) {
-              BallData.xMomentum += (BallData.xPos - (PaddleData.x + PaddleData.w / 2)) * 0.05
-              BallData.yMomentum = -Math.abs(BallData.yMomentum)
-              return true
+        if (!paddleCooldown) {
+          if (started) {
+            if (BallData.yPos + BallData.Rad >= PaddleData.y && BallData.yPos - BallData.Rad <= PaddleData.y + PaddleData.h) {
+              if (BallData.xPos + BallData.Rad >= PaddleData.x && BallData.xPos - BallData.Rad <= PaddleData.x + PaddleData.w) {
+                BallData.xMomentum += (BallData.xPos - (PaddleData.x + PaddleData.w / 2)) * 0.05
+                BallData.yMomentum = -Math.abs(BallData.yMomentum)
+                paddleCooldown = true
+                return true
+              }
             }
           }
         }
@@ -341,11 +345,7 @@
 
         PaddleData.x = PaddleData.x + PaddleData.xMomentum
 
-
-
-
-
-
+        if (BallData.yPos < PaddleData.y - 5) paddleCooldown = false
 
         const steps = Math.ceil(Math.sqrt(BallData.xMomentum ** 2 + BallData.yMomentum ** 2))
         const stepX = BallData.xMomentum / steps
