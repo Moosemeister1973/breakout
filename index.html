@@ -81,12 +81,20 @@
         Breakout Game
       </div>
     </div>
-
     <canvas id="canvas" width="600" height="450"></canvas>
+    <div id="failureScreen" class="silkscreen-regular"
+      style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 60px; color: white; pointer-events: none;">
+      FAILURE
+    </div>
+    <div id="failureScreen2" class="silkscreen-regular"
+      style="display: none; position: absolute; top: 65%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; color: white; pointer-events: none;">
+      Press Enter to Restart
+    </div>
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+
       const canvas = document.getElementById('canvas')
       const lifeDisplay = document.getElementById('lifeCounter')
       const ctx = canvas.getContext('2d')
@@ -132,14 +140,38 @@
         { x: 465, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' }
       ]
 
+      let highHitChance = 0.8
+      let lowHitCount = 1
+      let highHitCount = 2
+
       blocks.forEach((e) => {
-        e.hits = Math.random() < 0.8 ? 1 : 2
+        e.hits = Math.random() < highHitChance ? lowHitCount : highHitCount
       })
 
       let started = false
       let gameOver = false
+      let paddleCooldown = false
 
+      let level = 1
       let lives = 3
+
+      lifeDisplay.innerText = lives > 1 ? lives + ' Lives Remaining' : lives + ' Life Remaining'
+
+      function resetBlocks() {
+        if (highHitChance <= 0) {
+          highHitChance = 0.8
+          Math.random() < 0.5 ? lowHitCount++ : highHitCount++
+        } else {
+          highHitChance -= 0.2
+        }
+        blocks.forEach((e) => {
+          e.hits = Math.random() < highHitChance ? lowHitCount : highHitCount
+          e.status = 1
+        })
+        lives++
+        lifeDisplay.innerText = lives === 1 ? lives + ' Life Remaining' : lives + ' Lives Remaining'
+        level++
+      }
 
       function drawBackground() {
         for (let row = 0; row < canvas.height / bg_p_size; row++) {
@@ -177,12 +209,48 @@
       }
 
       document.addEventListener("keydown", (e) => {
+        if (e.key === 'Enter' && gameOver) location.reload()
         keysHeld.add(e.key)
       })
 
       document.addEventListener("keyup", (e) => {
         keysHeld.delete(e.key)
       })
+
+      function showFailureScreen() {
+        clearInterval(gameTick)
+
+        // Fill totalPixels array with every pixel in the canvas
+        const totalPixels = []
+        for (let row = 0; row < canvas.height; row++) {
+          for (let col = 0; col < canvas.width; col++) {
+            totalPixels.push({ x: col, y: row })
+          }
+        }
+
+        // Randomise pixel order
+        for (let i = totalPixels.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [totalPixels[i], totalPixels[j]] = [totalPixels[j], totalPixels[i]]
+        }
+
+        let pixelsDrawn = 0
+        const pixelsPerTick = 3000
+
+        const failureInterval = setInterval(() => {
+          ctx.fillStyle = 'red'
+          for (let i = 0; i < pixelsPerTick && pixelsDrawn < totalPixels.length; i++, pixelsDrawn++) {
+            const { x, y } = totalPixels[pixelsDrawn]
+            ctx.fillRect(x, y, 1, 1)
+          }
+
+          if (pixelsDrawn >= totalPixels.length) {
+            clearInterval(failureInterval)
+            document.getElementById('failureScreen').style.display = 'block'
+            document.getElementById('failureScreen2').style.display = 'block'
+          }
+        }, 30)
+      }
 
       document.addEventListener("keydown", (e) => {
         if (!started && (e.key === "ArrowUp" || e.key === "w" || e.key === " ")) {
@@ -196,12 +264,74 @@
         }
       })
 
-      
+      function blockCollisionCheck() {
+        let flipX = false
+        let flipY = false
+        blocks.some((e) => {
+          if (e.status === 1) {
+            // Ball overlap check
+            if (BallData.xPos + BallData.Rad >= e.x && BallData.xPos - BallData.Rad <= e.x + e.w && BallData.yPos + BallData.Rad >= e.y && BallData.yPos - BallData.Rad <= e.y + e.h) {
+              const overlapL = BallData.xPos + BallData.Rad - e.x
+              const overlapR = (e.x + e.w) - (BallData.xPos - BallData.Rad)
+              const overlapT = BallData.yPos + BallData.Rad - e.y
+              const overlapB = (e.y + e.h) - (BallData.yPos - BallData.Rad)
+              const minOverlap = Math.min(overlapL, overlapR, overlapT, overlapB)
+              if (minOverlap === overlapT || minOverlap === overlapB) flipY = true
+              else flipX = true
+              e.hits--
+              if (e.hits <= 0) e.status = 0
+              return true
+            }
+          }
+        })
+        if (flipX) BallData.xMomentum *= -1
+        if (flipY) BallData.yMomentum *= -1
+        return flipX || flipY
+      }
+
+      function paddleCollisionCheck() {
+        if (!paddleCooldown) {
+          if (started) {
+            if (BallData.yPos + BallData.Rad >= PaddleData.y && BallData.yPos - BallData.Rad <= PaddleData.y + PaddleData.h) {
+              if (BallData.xPos + BallData.Rad >= PaddleData.x && BallData.xPos - BallData.Rad <= PaddleData.x + PaddleData.w) {
+                BallData.xMomentum += (BallData.xPos - (PaddleData.x + PaddleData.w / 2)) * 0.05
+                BallData.yMomentum = -Math.abs(BallData.yMomentum)
+                paddleCooldown = true
+                return true
+              }
+            }
+          }
+        }
+      }
+
+      function wallCollisionCheck() {
+        if (BallData.xPos + BallData.Rad > 600) {
+          BallData.xMomentum = -Math.abs(BallData.xMomentum)
+        } else if (BallData.xPos - BallData.Rad < 0) {
+          BallData.xMomentum = Math.abs(BallData.xMomentum)
+        } else if (BallData.yPos - BallData.Rad < 0) {
+          BallData.yMomentum = Math.abs(BallData.yMomentum)
+        } else if (BallData.yPos + BallData.Rad > 450) {
+          BallData.xMomentum = 0
+          BallData.yMomentum = 0
+          if (started) {
+            lives--
+            if (lives === 1) lifeDisplay.innerText = lives + ' Life Remaining'
+            else if (lives < 1) lifeDisplay.innerText = 'Out of Lives'
+            else lifeDisplay.innerText = lives + ' Lives Remaining'
+            if (lives <= 0) {
+              gameOver = true
+              showFailureScreen()
+            } else {
+              started = false
+            }
+          }
+        }
+      }
 
       let gameTick = setInterval(() => {
 
         if (gameOver) {
-          clearInterval(gameTick)
           return
         }
 
@@ -215,69 +345,27 @@
 
         PaddleData.x = PaddleData.x + PaddleData.xMomentum
 
-        if (BallData.xPos + BallData.Rad > 600) {
-          BallData.xMomentum = -Math.abs(BallData.xMomentum)
-        }
-        if (BallData.xPos - BallData.Rad < 0) {
-          BallData.xMomentum = Math.abs(BallData.xMomentum)
-        }
-        if (BallData.yPos - BallData.Rad < 0) {
-          BallData.yMomentum = Math.abs(BallData.yMomentum)
-        }
-        if (BallData.yPos + BallData.Rad > 450) {
-          BallData.xMomentum = 0
-          BallData.yMomentum = 0
-          if (started) {
-            lives--
-            if (lives === 1) lifeDisplay.innerText = lives + ' Life Remaining'
-            else if (lives < 1) lifeDisplay.innerText = 'Out of Lives'
-            else lifeDisplay.innerText = lives + ' Lives Remaining'
-            if (lives <= 0) {
-              gameOver = true
-              alert("FAILURE")
-              location.reload()
-            } else {
-              started = false
-            }
-          }
-        }
-        if (started) {
-          if (BallData.yPos + BallData.Rad >= PaddleData.y && BallData.yPos - BallData.Rad <= PaddleData.y + PaddleData.h) {
-            if (BallData.xPos + BallData.Rad >= PaddleData.x && BallData.xPos - BallData.Rad <= PaddleData.x + PaddleData.w) {
-              BallData.xMomentum += (BallData.xPos - (PaddleData.x + PaddleData.w / 2)) * 0.05
-              BallData.yMomentum = -Math.abs(BallData.yMomentum)
-            }
-          }
-        }
+        if (BallData.yPos < PaddleData.y - 5) paddleCooldown = false
 
-        blocks.some((e) => {
-          if (e.status === 1) {
-            // Ball overlap check  e.x = 45, e.w = 60, e.y = 60, e.h = 20, BallData.xPos = 38, BallData.Rad = 9, BallData.yPos = 58
-            if (BallData.xPos + BallData.Rad >= e.x && BallData.xPos - BallData.Rad <= e.x + e.w && BallData.yPos + BallData.Rad >= e.y && BallData.yPos - BallData.Rad <= e.y + e.h) {
-              const overlapL = BallData.xPos + BallData.Rad - e.x 
-              const overlapR = (e.x + e.w) - (BallData.xPos - BallData.Rad) 
-              const overlapT = BallData.yPos + BallData.Rad - e.y 
-              const overlapB = (e.y + e.h) - (BallData.yPos - BallData.Rad)
-              const minOverlap = Math.min(overlapL, overlapR, overlapT, overlapB)
-              if (minOverlap === overlapT || minOverlap === overlapB) BallData.yMomentum *= -1
-              else BallData.xMomentum *= -1
-              e.hits--
-              if (e.hits <= 0) e.status = 0
-              return true
-            }
-          }
-        })
+        const steps = Math.ceil(Math.sqrt(BallData.xMomentum ** 2 + BallData.yMomentum ** 2))
+        const stepX = BallData.xMomentum / steps
+        const stepY = BallData.yMomentum / steps
+
+        for (let i = 0; i < steps; i++) {
+          if (gameOver) return
+          BallData.truePosX += stepX
+          BallData.truePosY += stepY
+          BallData.xPos = Math.round(BallData.truePosX)
+          BallData.yPos = Math.round(BallData.truePosY)
+          if (blockCollisionCheck()) break
+          if (paddleCollisionCheck()) break
+          wallCollisionCheck()
+        }
 
         if (blocks.every(e => e.status === 0)) {
-          gameOver = true
-          alert('You Win')
-          location.reload()
+          started = false
+          resetBlocks()
         }
-
-        BallData.truePosX = BallData.truePosX + BallData.xMomentum
-        BallData.truePosY = BallData.truePosY + BallData.yMomentum
-        BallData.xPos = Math.floor(BallData.truePosX + 0.5)
-        BallData.yPos = Math.floor(BallData.truePosY + 0.5)
 
         if (PaddleData.x < 1) PaddleData.x = 1
         if (PaddleData.x > 509) PaddleData.x = 509
