@@ -514,19 +514,74 @@
         }
       }
 
+      // BEGIN INSANITY
+
+      let autoPlaying = false
+
+      function predictBallX() {
+        let x = BallData.truePosX
+        let y = BallData.truePosY
+        let vx = BallData.xMomentum
+        let vy = BallData.yMomentum
+
+        while (y < PaddleData.y) {
+          x += vx
+          y += vy
+          if (x + BallData.Rad > 600) vx = -Math.abs(vx)
+          if (x - BallData.Rad < 0) vx = Math.abs(vx)
+        }
+        return x
+      }
+
+      // END INSANITY
+
       let gameTick = setInterval(() => {
 
         if (gameOver) {
           return
         }
 
-        if (keysHeld.has("ArrowLeft") || keysHeld.has("a")) {
+        // Watch close below
+
+        if (autoPlaying) {
+          if (!started) {
+            started = true
+            BallData.xMomentum = Math.random() < 0.5 ? -8 : 8
+            BallData.yMomentum = -8
+          }
+
+          const stuckOnWall = Math.abs(BallData.xMomentum) < 1 &&
+            (BallData.xPos < 100 || BallData.xPos > 500)
+
+          if (stuckOnWall) {
+            const targetX = BallData.xPos < 300
+              ? PaddleData.x + PaddleData.w * 0.8
+              : PaddleData.x + PaddleData.w * 0.2
+            const diff = targetX - (PaddleData.x + PaddleData.w / 2)
+            PaddleData.xMomentum = diff > 0 ? 12 : -12
+          } else if (Math.abs(BallData.xMomentum) < 1) {
+            const targetX = BallData.xPos > 300
+              ? PaddleData.x + PaddleData.w * 0.2
+              : PaddleData.x + PaddleData.w * 0.8
+            const diff = targetX - (PaddleData.x + PaddleData.w / 2)
+            PaddleData.xMomentum = diff > 0 ? 12 : -12
+          } else {
+            const targetX = BallData.yMomentum > 0 ? predictBallX() : BallData.xPos
+            const diff = targetX - (PaddleData.x + PaddleData.w / 2)
+            if (Math.abs(diff) > 5) {
+              PaddleData.xMomentum = diff > 0 ? 12 : -12
+            } else {
+              PaddleData.xMomentum = 0
+            }
+          }
+        } else if (keysHeld.has("ArrowLeft") || keysHeld.has("a")) {
           PaddleData.xMomentum = -12
         } else if (keysHeld.has("ArrowRight") || keysHeld.has("d")) {
           PaddleData.xMomentum = 12
         } else if (!usingTouch) {
           PaddleData.xMomentum = 0
         }
+        // Watch close above
 
         PaddleData.x = PaddleData.x + PaddleData.xMomentum
 
