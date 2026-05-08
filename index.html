@@ -179,6 +179,7 @@
       let gameOver = false
       let paddleCooldown = false
       let usingTouch = false
+      let activeTouchID = null
 
       let level = 1
       let lives = 3
@@ -293,14 +294,19 @@
       document.addEventListener('touchstart', (e) => {
         e.preventDefault()
         keysHeld.clear()
+        activeTouchID = touch.identifier
         const touch = e.touches[0]
         const x = touch.clientX
         if (x < window.innerWidth / 2) {
           PaddleData.xMomentum = -12
         } else PaddleData.xMomentum = 12
       }, {passive: false} )
-      document.addEventListener('touchend', () => {
-        PaddleData.xMomentum = 0
+      document.addEventListener('touchend', (e) => {
+        const touch = e.changedTouches[0]
+        if (touch.identifier === activeTouchID) {
+          PaddleData.xMomentum = 0
+          activeTouchID = null
+        }
       })
 
       canvas.addEventListener('touchstart', () => {
