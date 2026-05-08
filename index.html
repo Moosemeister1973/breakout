@@ -295,7 +295,7 @@
         keysHeld.clear()
         const touch = e.touches[0]
         const x = touch.clientX
-        if (x < screen.width / 2) {
+        if (x < window.innerWidth / 2) {
           PaddleData.xMomentum = -12
         } else PaddleData.xMomentum = 12
       }, {passive: false} )
