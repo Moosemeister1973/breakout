@@ -34,7 +34,7 @@
       margin: 0;
     }
 
-    canvas {
+    #canvas {
       border: 5px solid gray;
       background-color: white;
     }
@@ -49,133 +49,191 @@
       margin-bottom: 10px;
     }
 
-    div#title {
-      position: relative;
-      text-align: center;
-      width: fit-content;
-      border: 2px solid white;
-    }
-
     div#container {
       position: relative;
       width: 600px;
     }
 
-    div#lifeCounter {
-      position: absolute;
-      top: 25%;
-      left: 5%;
+    div.top {
+      position: relative;
+      text-align: center;
+      width: fit-content;
       border: 2px solid white;
+      font-size: 25px;
+    }
+
+    * {
+      -webkit-touch-callout: none;
+      user-select: none;
+      touch-action: none;
+      -webkit-user-select: none;
     }
   </style>
 
 </head>
 
 <body>
-  <div id="lifeCounter" class="silkscreen-regular">
-    3 Lives Remaining
-  </div>
+
   <div id="container">
     <div id="titleContainer">
-      <div id="title" class="silkscreen-regular">
+      <!--
+      <div id="title" class="silkscreen-regular top">
         Breakout Game
       </div>
+      -->
+      <div id="lifeCounter" class="silkscreen-regular top">
+        3 Lives Remaining
+      </div>
+      <div id="scoreDisplay" class="silkscreen-regular top">
+        Score: 0
+      </div>
+      <div id="highScore" class="silkscreen-regular top">
+        High Score: 0
+      </div>
     </div>
+
     <canvas id="canvas" width="600" height="450"></canvas>
-    <div id="failureScreen" class="silkscreen-regular"
+    <canvas id="startScreen" width="600" height="450"
+      style="display: block; position: absolute; top: 5px; left: 5px; transform: none; background-color: transparent;"></canvas>
+    <div id="failureText" class="silkscreen-regular"
       style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 60px; color: white; pointer-events: none;">
       FAILURE
     </div>
-    <div id="failureScreen2" class="silkscreen-regular"
-      style="display: none; position: absolute; top: 65%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; color: white; pointer-events: none;">
-      Press Enter to Restart
+    <div id="startText" class="silkscreen-regular"
+      style="display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; color: white; pointer-events: none;">
+      Press Enter or tap screen to Start (or don't if you think you can win blind)
     </div>
+    <div id="failureText2" class="silkscreen-regular"
+      style="display: none; position: absolute; top: 65%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; color: white; pointer-events: none;">
+      Press Enter or Tap to Restart
+    </div>
+    <div id="touchScreenSpaceBar" class="silkscreen-regular"
+      style="display: block; position: absolute; width: fit-content; top: 105%; left: 50%; transform: translate(-50%, 0%); font-size: 35px; color: white; border: 5px solid grey;">
+      Launch Ball</div>
+
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
 
+      const eraseCode = ['e', 'r', 'a', 's', 'e']
+      let eraseProgress = 0
+
       const canvas = document.getElementById('canvas')
+      const startScreen = document.getElementById('startScreen')
+      const startCTX = startScreen.getContext('2d')
       const lifeDisplay = document.getElementById('lifeCounter')
       const ctx = canvas.getContext('2d')
       const bg_p_c = ['#262626', '#363636']
       const bg_p_size = 30
       const PaddleData = { x: 255, y: 385, w: 90, h: 10, xMomentum: 0 }
       const BallData = { xPos: 300, yPos: 370, Rad: 9, xMomentum: 0, yMomentum: 0, truePosX: 300, truePosY: 370 }
+      const mobileSpace = document.getElementById('touchScreenSpaceBar')
+      const scoreDisplay = document.getElementById('scoreDisplay')
+      const highScoreDisplay = document.getElementById('highScore')
 
       const keysHeld = new Set()
 
       const blocks = [
         // Row 1 - Red
-        { x: 75, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
-        { x: 140, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
-        { x: 205, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
-        { x: 270, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
-        { x: 335, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
-        { x: 400, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
-        { x: 465, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', damagedColour: 'rgba(214, 0, 0, 0.7)' },
+        { x: 75, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', alphaColourCode: '1)'},
+        { x: 140, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', alphaColourCode: '1)' },
+        { x: 205, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', alphaColourCode: '1)' },
+        { x: 270, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', alphaColourCode: '1)' },
+        { x: 335, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', alphaColourCode: '1)' },
+        { x: 400, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', alphaColourCode: '1)' },
+        { x: 465, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', alphaColourCode: '1)' },
         // Row 2 - Yellow
-        { x: 75, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
-        { x: 140, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
-        { x: 205, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
-        { x: 270, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
-        { x: 335, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
-        { x: 400, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
-        { x: 465, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', damagedColour: 'rgba(214, 203, 0, 0.7)' },
+        { x: 75, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', alphaColourCode: '1)' },
+        { x: 140, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', alphaColourCode: '1)' },
+        { x: 205, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', alphaColourCode: '1)' },
+        { x: 270, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', alphaColourCode: '1)' },
+        { x: 335, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', alphaColourCode: '1)' },
+        { x: 400, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', alphaColourCode: '1)' },
+        { x: 465, y: 85, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 203, 0, 1)', alphaColourCode: '1)' },
         // Row 3 - Green
-        { x: 75, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
-        { x: 140, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
-        { x: 205, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
-        { x: 270, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
-        { x: 335, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
-        { x: 400, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
-        { x: 465, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', damagedColour: 'rgba(89, 214, 0, 0.7)' },
+        { x: 75, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', alphaColourCode: '1)' },
+        { x: 140, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', alphaColourCode: '1)' },
+        { x: 205, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', alphaColourCode: '1)' },
+        { x: 270, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', alphaColourCode: '1)' },
+        { x: 335, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', alphaColourCode: '1)' },
+        { x: 400, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', alphaColourCode: '1)' },
+        { x: 465, y: 110, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(89, 214, 0, 1)', alphaColourCode: '1)' },
         // Row 4 - Cyan
-        { x: 75, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
-        { x: 140, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
-        { x: 205, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
-        { x: 270, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
-        { x: 335, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
-        { x: 400, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' },
-        { x: 465, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', damagedColour: 'rgba(0, 211, 214, 0.7)' }
+        { x: 75, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', alphaColourCode: '1)' },
+        { x: 140, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', alphaColourCode: '1)' },
+        { x: 205, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', alphaColourCode: '1)' },
+        { x: 270, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', alphaColourCode: '1)' },
+        { x: 335, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', alphaColourCode: '1)' },
+        { x: 400, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', alphaColourCode: '1)' },
+        { x: 465, y: 135, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(0, 211, 214, 1)', alphaColourCode: '1)' }
       ]
 
       let highHitChance = 0.8
       let lowHitCount = 1
       let highHitCount = 2
+      const maxHits = 5
 
       blocks.forEach((e) => {
         e.hits = Math.random() < highHitChance ? lowHitCount : highHitCount
       })
 
+      let startScreenOver = false
       let started = false
       let gameOver = false
       let paddleCooldown = false
+      let usingTouch = false
+      let activeTouchID = null
 
       let level = 1
       let lives = 3
+      let score = 0
+      let highScore = Number(localStorage.getItem('highScore'))
+      highScoreDisplay.innerText = 'High Score: ' + highScore
 
       lifeDisplay.innerText = lives > 1 ? lives + ' Lives Remaining' : lives + ' Life Remaining'
 
+      // Fill in startScreen
+      startCTX.fillStyle = 'Green'
+      startCTX.fillRect(0, 0, startScreen.width, startScreen.height)
+
+      function win() {
+        score += 1000
+        highScore += 1000
+        localStorage.setItem('highScore', highScore)
+        alert('You win! (placeholder)')
+        location.reload()
+      }
+
       function resetBlocks() {
-        if (highHitChance <= 0) {
+        if (highHitChance < 0) {
+          if (highHitCount >= 5) win()
           highHitChance = 0.8
-          Math.random() < 0.5 ? lowHitCount++ : highHitCount++
+          lowHitCount + 2 == highHitCount ? lowHitCount++ : highHitCount++
         } else {
           highHitChance -= 0.2
         }
         blocks.forEach((e) => {
           e.hits = Math.random() < highHitChance ? lowHitCount : highHitCount
           e.status = 1
+
         })
         lives++
         lifeDisplay.innerText = lives === 1 ? lives + ' Life Remaining' : lives + ' Lives Remaining'
         level++
+        score += 100
+        scoreDisplay.innerText = 'Score: ' + score
+        if (highScore < score) {
+          localStorage.setItem('highScore', score)
+          highScore = score
+          highScoreDisplay.innerText = 'High Score: ' + highScore
+        }
       }
 
       function drawBackground() {
         for (let row = 0; row < canvas.height / bg_p_size; row++) {
           for (let col = 0; col < canvas.width / bg_p_size; col++) {
+            ctx.globalAlpha = 1
             ctx.fillStyle = (row + col) % 2 === 0 ? bg_p_c[0] : bg_p_c[1]
             ctx.fillRect(col * bg_p_size, row * bg_p_size, bg_p_size, bg_p_size)
           }
@@ -184,38 +242,153 @@
 
       function drawPaddle() {
         ctx.fillStyle = '#ffffff'
+        ctx.globalAlpha = 1
         ctx.beginPath()
         ctx.roundRect(PaddleData.x, PaddleData.y, PaddleData.w, PaddleData.h, 3)
         ctx.fill()
         return
       }
 
+      const ballTrail = []
+      const trailLength = 5
+      let stepIteration = 0
+      const stepIterationLength = 0
+
       function drawBall() {
+
+        ballTrail.forEach((pos, index) => {
+          ctx.globalAlpha = (index / trailLength) * 0.5
+          ctx.fillStyle = '#ffffff'
+          ctx.beginPath()
+          ctx.arc(pos.x, pos.y, BallData.Rad * (index / trailLength), 0, Math.PI * 2)
+          ctx.fill()
+        })
+
+        ctx.globalAlpha = 1
         ctx.fillStyle = '#ffffff'
         ctx.beginPath()
         ctx.arc(BallData.xPos, BallData.yPos, BallData.Rad, 0, Math.PI * 2)
         ctx.fill()
+        if (stepIteration >= stepIterationLength) {
+          stepIteration = 0
+          ballTrail.push({ x: BallData.xPos, y: BallData.yPos })
+          if (ballTrail.length > trailLength) ballTrail.shift()
+        } else stepIteration++
       }
 
       function generateBlocks() {
         blocks.forEach((e) => {
           if (e.status === 1) {
-            ctx.fillStyle = e.hits === 2 ? e.colour : e.damagedColour
+            const alpha = e.hits / maxHits
+            ctx.globalAlpha = alpha
+            ctx.fillStyle = e.colour //.replace(e.alphaColourCode, alpha + ')')
+            e.alphaColourCode = alpha + ')'
             ctx.beginPath()
             ctx.roundRect(e.x, e.y, e.w, e.h, 3)
             ctx.fill()
+            //console.log(e.hits, maxHits, e.hits / maxHits)
           }
         })
       }
 
+      document.addEventListener('touchstart', (e) => {
+        e.preventDefault()
+        usingTouch = true
+      }, { passive: false })
+      startScreen.addEventListener('touchstart', (e) => {
+        e.preventDefault()
+        clearStartScreen()
+      }, { passive: false })
+      mobileSpace.addEventListener('touchstart', (e) => {
+        e.preventDefault()
+        if (!started) {
+          started = true
+          if (PaddleData.xMomentum === 0) {
+            BallData.xMomentum = Math.random() < 0.5 ? -8 : 8
+          } else {
+            BallData.xMomentum = PaddleData.xMomentum < 0 ? -8 : 8
+          }
+          BallData.yMomentum = -8
+        }
+      }, { passive: false })
+      document.addEventListener('touchstart', (e) => {
+        e.preventDefault()
+        keysHeld.clear()
+        const touch = e.touches[0]
+        activeTouchID = touch.identifier
+        const x = touch.clientX
+        if (x < window.innerWidth / 2) {
+          PaddleData.xMomentum = -12
+        } else PaddleData.xMomentum = 12
+      }, { passive: false })
+      document.addEventListener('touchend', (e) => {
+        const touch = e.changedTouches[0]
+        if (touch.identifier === activeTouchID) {
+          PaddleData.xMomentum = 0
+          activeTouchID = null
+        }
+      })
+
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault()
+        if (gameOver) location.reload()
+      }, { passive: false })
+
       document.addEventListener("keydown", (e) => {
+        usingTouch = false
         if (e.key === 'Enter' && gameOver) location.reload()
+        if (e.key === 'Enter' && !startScreenOver) clearStartScreen()
         keysHeld.add(e.key)
+      })
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === eraseCode[eraseProgress]) {
+          eraseProgress++
+          if (eraseProgress >= eraseCode.length) {
+            if (confirm('Are you sure?')) {
+              localStorage.clear()
+              alert('Local data erased.')
+              location.reload()
+            } else alert('Data erasure aborted.')
+          }
+        } else eraseProgress = 0
       })
 
       document.addEventListener("keyup", (e) => {
         keysHeld.delete(e.key)
       })
+
+      function clearStartScreen() {
+        const totalPixels = []
+        for (let row = 0; row < startScreen.height; row++) {
+          for (let col = 0; col < canvas.width; col++) {
+            totalPixels.push({ x: col, y: row })
+          }
+        }
+
+        for (let i = totalPixels.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [totalPixels[i], totalPixels[j]] = [totalPixels[j], totalPixels[i]]
+        }
+
+        let pixelsDrawn = 0
+        const pixelsPerTick = 3000
+
+        const startInterval = setInterval(() => {
+          for (let i = 0; i < pixelsPerTick && pixelsDrawn < totalPixels.length; i++, pixelsDrawn++) {
+            const { x, y } = totalPixels[pixelsDrawn]
+            startCTX.clearRect(x, y, 1, 1)
+          }
+
+          document.getElementById('startText').style.display = 'none'
+
+          if (pixelsDrawn >= totalPixels.length) {
+            clearInterval(startInterval)
+            startScreen.style.display = 'none'
+          }
+        }, 30)
+        startScreenOver = true
+      }
 
       function showFailureScreen() {
         clearInterval(gameTick)
@@ -239,6 +412,7 @@
 
         const failureInterval = setInterval(() => {
           ctx.fillStyle = 'red'
+          ctx.globalAlpha = 1
           for (let i = 0; i < pixelsPerTick && pixelsDrawn < totalPixels.length; i++, pixelsDrawn++) {
             const { x, y } = totalPixels[pixelsDrawn]
             ctx.fillRect(x, y, 1, 1)
@@ -246,8 +420,8 @@
 
           if (pixelsDrawn >= totalPixels.length) {
             clearInterval(failureInterval)
-            document.getElementById('failureScreen').style.display = 'block'
-            document.getElementById('failureScreen2').style.display = 'block'
+            document.getElementById('failureText').style.display = 'block'
+            document.getElementById('failureText2').style.display = 'block'
           }
         }, 30)
       }
@@ -279,7 +453,16 @@
               if (minOverlap === overlapT || minOverlap === overlapB) flipY = true
               else flipX = true
               e.hits--
-              if (e.hits <= 0) e.status = 0
+              score += 5
+              scoreDisplay.innerText = 'Score: ' + score
+              if (score > highScore) {
+                localStorage.setItem('highScore', score)
+                highScore = score
+                highScoreDisplay.innerText = 'High Score: ' + highScore
+              }
+              if (e.hits <= 0) {
+                e.status = 0
+              }
               return true
             }
           }
@@ -316,6 +499,8 @@
           BallData.yMomentum = 0
           if (started) {
             lives--
+            score -= 50
+            scoreDisplay.innerText = 'Score: ' + score
             if (lives === 1) lifeDisplay.innerText = lives + ' Life Remaining'
             else if (lives < 1) lifeDisplay.innerText = 'Out of Lives'
             else lifeDisplay.innerText = lives + ' Lives Remaining'
@@ -329,19 +514,74 @@
         }
       }
 
+      // BEGIN INSANITY
+
+      let autoPlaying = false
+
+      function predictBallX() {
+        let x = BallData.truePosX
+        let y = BallData.truePosY
+        let vx = BallData.xMomentum
+        let vy = BallData.yMomentum
+
+        while (y < PaddleData.y) {
+          x += vx
+          y += vy
+          if (x + BallData.Rad > 600) vx = -Math.abs(vx)
+          if (x - BallData.Rad < 0) vx = Math.abs(vx)
+        }
+        return x
+      }
+
+      // END INSANITY
+
       let gameTick = setInterval(() => {
 
         if (gameOver) {
           return
         }
 
-        if (keysHeld.has("ArrowLeft") || keysHeld.has("a")) {
+        // Watch close below
+
+        if (autoPlaying) {
+          if (!started) {
+            started = true
+            BallData.xMomentum = Math.random() < 0.5 ? -8 : 8
+            BallData.yMomentum = -8
+          }
+
+          const stuckOnWall = Math.abs(BallData.xMomentum) < 1 &&
+            (BallData.xPos < 100 || BallData.xPos > 500)
+
+          if (stuckOnWall) {
+            const targetX = BallData.xPos < 300
+              ? PaddleData.x + PaddleData.w * 0.8
+              : PaddleData.x + PaddleData.w * 0.2
+            const diff = targetX - (PaddleData.x + PaddleData.w / 2)
+            PaddleData.xMomentum = diff > 0 ? 12 : -12
+          } else if (Math.abs(BallData.xMomentum) < 1) {
+            const targetX = BallData.xPos > 300
+              ? PaddleData.x + PaddleData.w * 0.2
+              : PaddleData.x + PaddleData.w * 0.8
+            const diff = targetX - (PaddleData.x + PaddleData.w / 2)
+            PaddleData.xMomentum = diff > 0 ? 12 : -12
+          } else {
+            const targetX = BallData.yMomentum > 0 ? predictBallX() : BallData.xPos
+            const diff = targetX - (PaddleData.x + PaddleData.w / 2)
+            if (Math.abs(diff) > 5) {
+              PaddleData.xMomentum = diff > 0 ? 12 : -12
+            } else {
+              PaddleData.xMomentum = 0
+            }
+          }
+        } else if (keysHeld.has("ArrowLeft") || keysHeld.has("a")) {
           PaddleData.xMomentum = -12
         } else if (keysHeld.has("ArrowRight") || keysHeld.has("d")) {
           PaddleData.xMomentum = 12
-        } else {
+        } else if (!usingTouch) {
           PaddleData.xMomentum = 0
         }
+        // Watch close above
 
         PaddleData.x = PaddleData.x + PaddleData.xMomentum
 
