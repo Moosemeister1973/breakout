@@ -294,8 +294,8 @@
       document.addEventListener('touchstart', (e) => {
         e.preventDefault()
         keysHeld.clear()
-        activeTouchID = touch.identifier
         const touch = e.touches[0]
+        activeTouchID = touch.identifier
         const x = touch.clientX
         if (x < window.innerWidth / 2) {
           PaddleData.xMomentum = -12
