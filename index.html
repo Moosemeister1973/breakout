@@ -66,6 +66,7 @@
       -webkit-touch-callout: none;
       user-select: none;
       touch-action: none;
+      -webkit-user-select: none;
     }
   </style>
 
@@ -269,11 +270,11 @@
         })
       }
 
-      document.addEventListener('touchstart', () => { usingTouch = true })
+      document.addEventListener('touchstart', () => { usingTouch = true }, {passive: false})
       startScreen.addEventListener('touchstart', (e) => {
         e.preventDefault()
         clearStartScreen()
-      })
+      }, {passive: false} )
       mobileSpace.addEventListener('touchstart', () => {
         if (!started) {
           started = true
@@ -284,7 +285,7 @@
           }
           BallData.yMomentum = -8
         }
-      })
+      }, {passive: false} )
       document.addEventListener('touchstart', (e) => {
         keysHeld.clear()
         const touch = e.touches[0]
@@ -292,12 +293,12 @@
         if (x < screen.width / 2) {
           PaddleData.xMomentum = -12
         } else PaddleData.xMomentum = 12
-      })
+      }, {passive: false} )
       document.addEventListener('touchend', () => {
         PaddleData.xMomentum = 0
       })
 
-      canvas.addEventListener('touchstart', () => { if (gameOver) location.reload() })
+      canvas.addEventListener('touchstart', () => { if (gameOver) location.reload() }, {passive: false})
 
       document.addEventListener("keydown", (e) => {
         usingTouch = false
