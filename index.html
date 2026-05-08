@@ -419,9 +419,9 @@
               if (minOverlap === overlapT || minOverlap === overlapB) flipY = true
               else flipX = true
               e.hits--
+              score += 5
               if (e.hits <= 0) {
                 e.status = 0
-                score += 10
                 scoreDisplay.innerText = 'Score: ' + score
                 if (score > highScore) {
                   localStorage.setItem('highScore', score)
