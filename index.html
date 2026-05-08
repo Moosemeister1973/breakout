@@ -420,9 +420,9 @@
               else flipX = true
               e.hits--
               score += 5
+              scoreDisplay.innerText = 'Score: ' + score
               if (e.hits <= 0) {
                 e.status = 0
-                scoreDisplay.innerText = 'Score: ' + score
                 if (score > highScore) {
                   localStorage.setItem('highScore', score)
                   highScore = score
