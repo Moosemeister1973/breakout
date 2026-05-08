@@ -49,23 +49,17 @@
       margin-bottom: 10px;
     }
 
-    div#title {
-      position: relative;
-      text-align: center;
-      width: fit-content;
-      border: 2px solid white;
-    }
-
     div#container {
       position: relative;
       width: 600px;
     }
 
-    div#lifeCounter {
-      position: absolute;
-      top: 25%;
-      left: 5%;
+    div.top {
+      position: relative;
+      text-align: center;
+      width: fit-content;
       border: 2px solid white;
+      font-size: 25px;
     }
 
     * {
@@ -78,15 +72,25 @@
 </head>
 
 <body>
-  <div id="lifeCounter" class="silkscreen-regular">
-    3 Lives Remaining
-  </div>
+
   <div id="container">
     <div id="titleContainer">
-      <div id="title" class="silkscreen-regular">
+      <!--
+      <div id="title" class="silkscreen-regular top">
         Breakout Game
       </div>
+      -->
+      <div id="lifeCounter" class="silkscreen-regular top">
+        3 Lives Remaining
+      </div>
+      <div id="scoreDisplay" class="silkscreen-regular top">
+        Score: 0
+      </div>
+      <div id="highScore" class="silkscreen-regular top">
+        High Score: 0
+      </div>
     </div>
+
     <canvas id="canvas" width="600" height="450"></canvas>
     <canvas id="startScreen" width="600" height="450"
       style="display: block; position: absolute; top: 5px; left: 5px; transform: none; background-color: transparent;"></canvas>
@@ -121,6 +125,8 @@
       const PaddleData = { x: 255, y: 385, w: 90, h: 10, xMomentum: 0 }
       const BallData = { xPos: 300, yPos: 370, Rad: 9, xMomentum: 0, yMomentum: 0, truePosX: 300, truePosY: 370 }
       const mobileSpace = document.getElementById('touchScreenSpaceBar')
+      const scoreDisplay = document.getElementById('scoreDisplay')
+      const highScoreDisplay = document.getElementById('highScore')
 
       const keysHeld = new Set()
 
@@ -175,6 +181,9 @@
 
       let level = 1
       let lives = 3
+      let score = 0
+      let highScore = Number(localStorage.getItem('highScore'))
+      highScoreDisplay.innerText = 'High Score: ' + highScore
 
       lifeDisplay.innerText = lives > 1 ? lives + ' Lives Remaining' : lives + ' Life Remaining'
 
@@ -196,6 +205,13 @@
         lives++
         lifeDisplay.innerText = lives === 1 ? lives + ' Life Remaining' : lives + ' Lives Remaining'
         level++
+        score += 100
+        scoreDisplay.innerText = 'Score: ' + score
+        if (highScore < score) {
+          localStorage.setItem('highScore', score)
+          highScore = score
+          highScoreDisplay.innerText = 'High Score: ' + highScore
+        }
       }
 
       function drawBackground() {
@@ -253,7 +269,7 @@
         })
       }
 
-      document.addEventListener('touchstart', () => { usingTouch = true }, { once: true })
+      document.addEventListener('touchstart', () => { usingTouch = true })
       startScreen.addEventListener('touchstart', (e) => {
         e.preventDefault()
         clearStartScreen()
@@ -270,6 +286,7 @@
         }
       })
       document.addEventListener('touchstart', (e) => {
+        keysHeld.clear()
         const touch = e.touches[0]
         const x = touch.clientX
         if (x < screen.width / 2) {
@@ -280,8 +297,10 @@
         PaddleData.xMomentum = 0
       })
 
+      canvas.addEventListener('touchstart', () => { if (gameOver) location.reload() })
 
       document.addEventListener("keydown", (e) => {
+        usingTouch = false
         if (e.key === 'Enter' && gameOver) location.reload()
         if (e.key === 'Enter' && !startScreenOver) clearStartScreen()
         keysHeld.add(e.key)
@@ -385,7 +404,16 @@
               if (minOverlap === overlapT || minOverlap === overlapB) flipY = true
               else flipX = true
               e.hits--
-              if (e.hits <= 0) e.status = 0
+              if (e.hits <= 0) {
+                e.status = 0
+                score += 10
+                scoreDisplay.innerText = 'Score: ' + score
+                if (score > highScore) {
+                  localStorage.setItem('highScore', score)
+                  highScore = score
+                  highScoreDisplay.innerText = 'High Score: ' + highScore
+                }
+              }
               return true
             }
           }
