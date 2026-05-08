@@ -105,7 +105,7 @@
     </div>
     <div id="failureText2" class="silkscreen-regular"
       style="display: none; position: absolute; top: 65%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; color: white; pointer-events: none;">
-      Press Enter to Restart
+      Press Enter or Tap to Restart
     </div>
     <div id="touchScreenSpaceBar" class="silkscreen-regular"
       style="display: block; position: absolute; width: fit-content; top: 105%; left: 50%; transform: translate(-50%, 0%); font-size: 40px; color: white; border: 5px solid grey;">
@@ -270,12 +270,16 @@
         })
       }
 
-      document.addEventListener('touchstart', () => { usingTouch = true }, {passive: false})
+      document.addEventListener('touchstart', (e) => { 
+        e.preventDefault()
+        usingTouch = true 
+      }, {passive: false})
       startScreen.addEventListener('touchstart', (e) => {
         e.preventDefault()
         clearStartScreen()
       }, {passive: false} )
-      mobileSpace.addEventListener('touchstart', () => {
+      mobileSpace.addEventListener('touchstart', (e) => {
+        e.preventDefault()
         if (!started) {
           started = true
           if (PaddleData.xMomentum === 0) {
@@ -287,6 +291,7 @@
         }
       }, {passive: false} )
       document.addEventListener('touchstart', (e) => {
+        e.preventDefault()
         keysHeld.clear()
         const touch = e.touches[0]
         const x = touch.clientX
@@ -298,7 +303,10 @@
         PaddleData.xMomentum = 0
       })
 
-      canvas.addEventListener('touchstart', () => { if (gameOver) location.reload() }, {passive: false})
+      canvas.addEventListener('touchstart', () => {
+        e.preventDefault()
+        if (gameOver) location.reload()
+      }, {passive: false})
 
       document.addEventListener("keydown", (e) => {
         usingTouch = false
