@@ -108,13 +108,16 @@
       Press Enter or Tap to Restart
     </div>
     <div id="touchScreenSpaceBar" class="silkscreen-regular"
-      style="display: block; position: absolute; width: fit-content; top: 105%; left: 50%; transform: translate(-50%, 0%); font-size: 40px; color: white; border: 5px solid grey;">
-      The Humble Space Bar</div>
+      style="display: block; position: absolute; width: fit-content; top: 105%; left: 50%; transform: translate(-50%, 0%); font-size: 35px; color: white; border: 5px solid grey;">
+      Launch Ball</div>
 
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+
+      const eraseCode = ['e', 'r', 'a', 's', 'e']
+      let eraseProgress = 0
 
       const canvas = document.getElementById('canvas')
       const startScreen = document.getElementById('startScreen')
@@ -271,14 +274,14 @@
         })
       }
 
-      document.addEventListener('touchstart', (e) => { 
+      document.addEventListener('touchstart', (e) => {
         e.preventDefault()
-        usingTouch = true 
-      }, {passive: false})
+        usingTouch = true
+      }, { passive: false })
       startScreen.addEventListener('touchstart', (e) => {
         e.preventDefault()
         clearStartScreen()
-      }, {passive: false} )
+      }, { passive: false })
       mobileSpace.addEventListener('touchstart', (e) => {
         e.preventDefault()
         if (!started) {
@@ -290,7 +293,7 @@
           }
           BallData.yMomentum = -8
         }
-      }, {passive: false} )
+      }, { passive: false })
       document.addEventListener('touchstart', (e) => {
         e.preventDefault()
         keysHeld.clear()
@@ -300,7 +303,7 @@
         if (x < window.innerWidth / 2) {
           PaddleData.xMomentum = -12
         } else PaddleData.xMomentum = 12
-      }, {passive: false} )
+      }, { passive: false })
       document.addEventListener('touchend', (e) => {
         const touch = e.changedTouches[0]
         if (touch.identifier === activeTouchID) {
@@ -312,13 +315,26 @@
       canvas.addEventListener('touchstart', () => {
         e.preventDefault()
         if (gameOver) location.reload()
-      }, {passive: false})
+      }, { passive: false })
 
       document.addEventListener("keydown", (e) => {
         usingTouch = false
         if (e.key === 'Enter' && gameOver) location.reload()
         if (e.key === 'Enter' && !startScreenOver) clearStartScreen()
         keysHeld.add(e.key)
+      })
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === eraseCode[eraseProgress]) {
+          eraseProgress++
+          if (eraseProgress >= eraseCode.length) {
+            if (confirm('Are you sure?')) {
+              localStorage.clear()
+              alert('Local data erased.')
+              location.reload()
+            }
+          }
+        } else eraseProgress = 0
       })
 
       document.addEventListener("keyup", (e) => {
@@ -421,13 +437,13 @@
               e.hits--
               score += 5
               scoreDisplay.innerText = 'Score: ' + score
+              if (score > highScore) {
+                localStorage.setItem('highScore', score)
+                highScore = score
+                highScoreDisplay.innerText = 'High Score: ' + highScore
+              }
               if (e.hits <= 0) {
                 e.status = 0
-                if (score > highScore) {
-                  localStorage.setItem('highScore', score)
-                  highScore = score
-                  highScoreDisplay.innerText = 'High Score: ' + highScore
-                }
               }
               return true
             }
@@ -465,6 +481,8 @@
           BallData.yMomentum = 0
           if (started) {
             lives--
+            score -= 50
+            scoreDisplay.innerText = 'Score: ' + score
             if (lives === 1) lifeDisplay.innerText = lives + ' Life Remaining'
             else if (lives < 1) lifeDisplay.innerText = 'Out of Lives'
             else lifeDisplay.innerText = lives + ' Lives Remaining'
