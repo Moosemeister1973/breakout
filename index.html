@@ -369,8 +369,7 @@
             BallData.xMomentum = PaddleData.xMomentum < 0 ? -8 : 8
           }
           BallData.yMomentum = -8
-        }
-        if (parryWindow) {
+        } else if (parryWindow && started) {
           BallData.parried = true
           paddleCooldown = false
           parryWindow = false
