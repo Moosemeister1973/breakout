@@ -74,6 +74,8 @@
 
 <body>
 
+  <audio id='parrySFX' src='audio/parry.mp3'></audio>
+
   <div id="container">
     <div id="titleContainer">
       <!--
@@ -133,6 +135,7 @@
       const mobileSpace = document.getElementById('touchScreenSpaceBar')
       const scoreDisplay = document.getElementById('scoreDisplay')
       const highScoreDisplay = document.getElementById('highScore')
+      const parrySFX = document.getElementById('parrySFX')
 
       const keysHeld = new Set()
 
@@ -376,6 +379,9 @@
           BallData.yMomentum = -Math.abs(BallData.yMomentum)
           BallData.xMomentum *= 2
           BallData.yMomentum *= 2
+          document.body.style.backgroundColor = '#1f1f1f'
+          parrySFX.play()
+          setTimeout(() => { document.body.style.backgroundColor = 'black' }, 150)
         }
       }, { passive: false })
       document.addEventListener('touchstart', (e) => {
@@ -509,6 +515,9 @@
           BallData.yMomentum = -Math.abs(BallData.yMomentum)
           BallData.xMomentum *= 2
           BallData.yMomentum *= 2
+          document.body.style.backgroundColor = '#1f1f1f'
+          parrySFX.play()
+          setTimeout(() => { document.body.style.backgroundColor = 'black' }, 150)
         }
       })
 
@@ -674,7 +683,7 @@
 
         if (BallData.yPos < PaddleData.y - 5) paddleCooldown = false
         if (((BallData.yPos + BallData.Rad) > (PaddleData.y - 20)) && (((BallData.xPos + BallData.Rad) > PaddleData.x) &&
-        ((BallData.xPos - BallData.Rad) < (PaddleData.x + PaddleData.w))) && !((BallData.yPos + BallData.Rad) > (PaddleData.y + PaddleData.h / 2))) parryWindow = true
+          ((BallData.xPos - BallData.Rad) < (PaddleData.x + PaddleData.w))) && !((BallData.yPos + BallData.Rad) > (PaddleData.y + PaddleData.h / 2))) parryWindow = true
         else parryWindow = false
 
         const steps = Math.ceil(Math.sqrt(BallData.xMomentum ** 2 + BallData.yMomentum ** 2))
