@@ -124,6 +124,8 @@
       const startCTX = startScreen.getContext('2d')
       const lifeDisplay = document.getElementById('lifeCounter')
       const ctx = canvas.getContext('2d')
+      ctx.shadowColor = '#ffffff'
+
       const bg_p_c = ['#262626', '#363636']
       const bg_p_size = 30
       const PaddleData = { x: 255, y: 385, w: 90, h: 10, xMomentum: 0 }
@@ -136,7 +138,7 @@
 
       const blocks = [
         // Row 1 - Red
-        { x: 75, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', alphaColourCode: '1)'},
+        { x: 75, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', alphaColourCode: '1)' },
         { x: 140, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', alphaColourCode: '1)' },
         { x: 205, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', alphaColourCode: '1)' },
         { x: 270, y: 60, w: 60, h: 20, hits: 1, status: 1, colour: 'rgba(214, 0, 0, 1)', alphaColourCode: '1)' },
@@ -183,6 +185,7 @@
       let gameOver = false
       let paddleCooldown = false
       let usingTouch = false
+      let autoWin = true
       let activeTouchID = null
 
       let level = 1
@@ -198,11 +201,45 @@
       startCTX.fillRect(0, 0, startScreen.width, startScreen.height)
 
       function win() {
+        gameOver = true
         score += 1000
         highScore += 1000
         localStorage.setItem('highScore', highScore)
+        const totalPixels = []
+        for (let row = 0; row < canvas.height; row++) {
+          for (let col = 0; col < canvas.width; col++) {
+            totalPixels.push({ x: col, y: row })
+          }
+        }
+        for (let i = totalPixels.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [totalPixels[i], totalPixels[j]] = [totalPixels[j], totalPixels[i]]
+        }
+
+        let pixelsDrawn = 0
+        const pixelsPerTick = 3000
+
+        const winInterval = setInterval(() => {
+          ctx.fillStyle = 'purple'
+          ctx.globalAlpha = 1
+          for (let i = 0; i < pixelsPerTick && pixelsDrawn < totalPixels.length; i++, pixelsDrawn++) {
+            const { x, y } = totalPixels[pixelsDrawn]
+            ctx.fillRect(x, y, 1, 1)
+          }
+
+          if (pixelsDrawn >= totalPixels.length) {
+            clearInterval(winInterval)
+            document.getElementById('failureText').innerText = 'YOU WIN'
+            document.getElementById('failureText2').innerText = 'Final score: ' + score + ' tap or press Enter to restart.'
+            document.getElementById('failureText').style.display = 'block'
+            document.getElementById('failureText2').style.display = 'block'
+          }
+        }, 30)
+
+        /*
         alert('You win! (placeholder)')
         location.reload()
+        */
       }
 
       function resetBlocks() {
@@ -241,11 +278,14 @@
       }
 
       function drawPaddle() {
+        ctx.shadowColor = '#ffffff'
+        ctx.shadowBlur = 10
         ctx.fillStyle = '#ffffff'
         ctx.globalAlpha = 1
         ctx.beginPath()
         ctx.roundRect(PaddleData.x, PaddleData.y, PaddleData.w, PaddleData.h, 3)
         ctx.fill()
+        ctx.shadowBlur = 0
         return
       }
 
@@ -255,6 +295,8 @@
       const stepIterationLength = 0
 
       function drawBall() {
+
+        ctx.shadowBlur = 15
 
         ballTrail.forEach((pos, index) => {
           ctx.globalAlpha = (index / trailLength) * 0.5
@@ -274,14 +316,17 @@
           ballTrail.push({ x: BallData.xPos, y: BallData.yPos })
           if (ballTrail.length > trailLength) ballTrail.shift()
         } else stepIteration++
+        ctx.shadowBlur = 0
       }
 
       function generateBlocks() {
+        ctx.shadowBlur = 5
         blocks.forEach((e) => {
           if (e.status === 1) {
             const alpha = e.hits / maxHits
             ctx.globalAlpha = alpha
             ctx.fillStyle = e.colour //.replace(e.alphaColourCode, alpha + ')')
+            ctx.shadowColor = e.colour
             e.alphaColourCode = alpha + ')'
             ctx.beginPath()
             ctx.roundRect(e.x, e.y, e.w, e.h, 3)
@@ -289,6 +334,8 @@
             //console.log(e.hits, maxHits, e.hits / maxHits)
           }
         })
+        ctx.shadowBlur = 0
+        ctx.shadowColor = '#ffffff'
       }
 
       document.addEventListener('touchstart', (e) => {
@@ -544,35 +591,35 @@
         // Watch close below
 
         if (autoPlaying) {
+
           if (!started) {
             started = true
             BallData.xMomentum = Math.random() < 0.5 ? -8 : 8
             BallData.yMomentum = -8
           }
 
-          const stuckOnWall = Math.abs(BallData.xMomentum) < 1 &&
-            (BallData.xPos < 100 || BallData.xPos > 500)
+          const paddleCenter = PaddleData.x + PaddleData.w / 2
 
-          if (stuckOnWall) {
-            const targetX = BallData.xPos < 300
-              ? PaddleData.x + PaddleData.w * 0.8
-              : PaddleData.x + PaddleData.w * 0.2
-            const diff = targetX - (PaddleData.x + PaddleData.w / 2)
-            PaddleData.xMomentum = diff > 0 ? 12 : -12
-          } else if (Math.abs(BallData.xMomentum) < 1) {
-            const targetX = BallData.xPos > 300
-              ? PaddleData.x + PaddleData.w * 0.2
-              : PaddleData.x + PaddleData.w * 0.8
-            const diff = targetX - (PaddleData.x + PaddleData.w / 2)
+          // Predict landing point when ball travelling downward
+          let targetX = BallData.yMomentum > 0
+            ? predictBallX()
+            : BallData.xPos
+
+          // If horizontal momentum is too low,
+          // intentionally offset paddle slightly
+          // instead of running wildly across screen
+          if (Math.abs(BallData.xMomentum) < 1.5) {
+
+            const offset = BallData.xPos < 300 ? -25 : 25
+            targetX += offset
+          }
+
+          const diff = targetX - paddleCenter
+
+          if (Math.abs(diff) > 5) {
             PaddleData.xMomentum = diff > 0 ? 12 : -12
           } else {
-            const targetX = BallData.yMomentum > 0 ? predictBallX() : BallData.xPos
-            const diff = targetX - (PaddleData.x + PaddleData.w / 2)
-            if (Math.abs(diff) > 5) {
-              PaddleData.xMomentum = diff > 0 ? 12 : -12
-            } else {
-              PaddleData.xMomentum = 0
-            }
+            PaddleData.xMomentum = 0
           }
         } else if (keysHeld.has("ArrowLeft") || keysHeld.has("a")) {
           PaddleData.xMomentum = -12
@@ -621,7 +668,7 @@
         drawPaddle()
         drawBall()
         generateBlocks()
-      }, 30)
+      }, autoPlaying ? 1 : 30)
 
     })
   </script>
