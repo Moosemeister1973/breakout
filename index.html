@@ -129,7 +129,7 @@
       const bg_p_c = ['#262626', '#363636']
       const bg_p_size = 30
       const PaddleData = { x: 255, y: 385, w: 90, h: 10, xMomentum: 0 }
-      const BallData = { xPos: 300, yPos: 370, Rad: 9, xMomentum: 0, yMomentum: 0, truePosX: 300, truePosY: 370 }
+      const BallData = { xPos: 300, yPos: 370, Rad: 9, xMomentum: 0, yMomentum: 0, truePosX: 300, truePosY: 370, parried: false }
       const mobileSpace = document.getElementById('touchScreenSpaceBar')
       const scoreDisplay = document.getElementById('scoreDisplay')
       const highScoreDisplay = document.getElementById('highScore')
@@ -186,6 +186,7 @@
       let paddleCooldown = false
       let usingTouch = false
       let autoWin = true
+      let parryWindow = false
       let activeTouchID = null
 
       let level = 1
@@ -230,7 +231,7 @@
           if (pixelsDrawn >= totalPixels.length) {
             clearInterval(winInterval)
             document.getElementById('failureText').innerText = 'YOU WIN'
-            document.getElementById('failureText2').innerText = 'Final score: ' + score + ' tap or press Enter to restart.'
+            document.getElementById('failureText2').innerText = 'Final score: ' + score + '! tap or press Enter to restart.'
             document.getElementById('failureText').style.display = 'block'
             document.getElementById('failureText2').style.display = 'block'
           }
@@ -296,18 +297,28 @@
 
       function drawBall() {
 
-        ctx.shadowBlur = 15
-
+        if (BallData.parried) {
+          ctx.fillStyle = 'red'
+          ctx.shadowColor = 'orange'
+          ctx.shadowBlur = 30
+        } else if (parryWindow) {
+          ctx.shadowColor = 'yellow'
+          ctx.shadowBlur = 30
+          ctx.fillStyle = '#ffffff'
+        } else {
+          ctx.fillStyle = '#ffffff'
+          ctx.shadowColor = '#ffffff'
+          ctx.shadowBlur = 15
+        }
         ballTrail.forEach((pos, index) => {
           ctx.globalAlpha = (index / trailLength) * 0.5
-          ctx.fillStyle = '#ffffff'
           ctx.beginPath()
           ctx.arc(pos.x, pos.y, BallData.Rad * (index / trailLength), 0, Math.PI * 2)
           ctx.fill()
         })
 
         ctx.globalAlpha = 1
-        ctx.fillStyle = '#ffffff'
+
         ctx.beginPath()
         ctx.arc(BallData.xPos, BallData.yPos, BallData.Rad, 0, Math.PI * 2)
         ctx.fill()
@@ -317,6 +328,8 @@
           if (ballTrail.length > trailLength) ballTrail.shift()
         } else stepIteration++
         ctx.shadowBlur = 0
+        ctx.fillStyle = '#ffffff'
+        ctx.shadowColor = '#ffffff'
       }
 
       function generateBlocks() {
@@ -356,6 +369,14 @@
             BallData.xMomentum = PaddleData.xMomentum < 0 ? -8 : 8
           }
           BallData.yMomentum = -8
+        }
+        if (parryWindow) {
+          BallData.parried = true
+          paddleCooldown = false
+          parryWindow = false
+          BallData.yMomentum = -Math.abs(BallData.yMomentum)
+          BallData.xMomentum *= 2
+          BallData.yMomentum *= 2
         }
       }, { passive: false })
       document.addEventListener('touchstart', (e) => {
@@ -482,6 +503,13 @@
             BallData.xMomentum = PaddleData.xMomentum < 0 ? -8 : 8
           }
           BallData.yMomentum = -8
+        } else if (e.key === ' ' && parryWindow && started) {
+          BallData.parried = true
+          paddleCooldown = false
+          parryWindow = false
+          BallData.yMomentum = -Math.abs(BallData.yMomentum)
+          BallData.xMomentum *= 2
+          BallData.yMomentum *= 2
         }
       })
 
@@ -499,8 +527,20 @@
               const minOverlap = Math.min(overlapL, overlapR, overlapT, overlapB)
               if (minOverlap === overlapT || minOverlap === overlapB) flipY = true
               else flipX = true
-              e.hits--
-              score += 5
+              if (BallData.parried) {
+                BallData.parried = false
+                BallData.xMomentum /= 2
+                BallData.yMomentum /= 2
+                e.hits -= 2
+                score += 10
+                if (e.hits <= 0) {
+                  flipX = false
+                  flipY = false
+                }
+              } else {
+                e.hits--
+                score += 5
+              }
               scoreDisplay.innerText = 'Score: ' + score
               if (score > highScore) {
                 localStorage.setItem('highScore', score)
@@ -544,6 +584,7 @@
         } else if (BallData.yPos + BallData.Rad > 450) {
           BallData.xMomentum = 0
           BallData.yMomentum = 0
+          BallData.parried = false
           if (started) {
             lives--
             score -= 50
@@ -633,6 +674,9 @@
         PaddleData.x = PaddleData.x + PaddleData.xMomentum
 
         if (BallData.yPos < PaddleData.y - 5) paddleCooldown = false
+        if (((BallData.yPos + BallData.Rad) > (PaddleData.y - 20)) && (((BallData.xPos + BallData.Rad) > PaddleData.x) &&
+        ((BallData.xPos - BallData.Rad) < (PaddleData.x + PaddleData.w))) && !((BallData.yPos + BallData.Rad) > (PaddleData.y + PaddleData.h / 2))) parryWindow = true
+        else parryWindow = false
 
         const steps = Math.ceil(Math.sqrt(BallData.xMomentum ** 2 + BallData.yMomentum ** 2))
         const stepX = BallData.xMomentum / steps
